@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edelweiss Open House Registration | Prototype</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- Google Fonts: Poppins & Inter -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        elc: {
+                            navy: '#293C88',
+                            darknavy: '#002B5B',
+                            navyhover: '#1d2c68',
+                            yellow: '#FED700',
+                            yellowhover: '#e5c200',
+                            lightyellow: '#FFF4BA',
+                            creamyellow: '#FFFDF0',
+                            lightbg: '#F8FAFC',
+                            cardbg: '#F6F6F6'
+                        }
+                    },
+                    fontFamily: {
+                        poppins: ['Poppins', 'sans-serif'],
+                        inter: ['Inter', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #F8FAFC;
+            color: #293C88;
+        }
+
+        .btn-elc-primary {
+            background-color: #FED700;
+            color: #293C88;
+            transition: all 0.3s ease;
+        }
+
+        .btn-elc-primary:hover {
+            background-color: #e5c200;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 18px rgba(254, 215, 0, 0.4);
+        }
+
+        .btn-elc-navy {
+            background-color: #293C88;
+            color: #FFFFFF;
+            transition: all 0.3s ease;
+        }
+
+        .btn-elc-navy:hover {
+            background-color: #1d2c68;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 18px rgba(41, 60, 136, 0.3);
+        }
+
+        .form-card {
+            box-shadow: 0 20px 35px -10px rgba(41, 60, 136, 0.12), 0 10px 15px -5px rgba(0, 0, 0, 0.04);
+        }
+
+        .hero-banner {
+            background: linear-gradient(135deg, #293C88 0%, #002B5B 100%);
+        }
+    </style>
+</head>
+
+<body class="min-h-screen flex flex-col antialiased">
+
+    <!-- Top Developer Toolbar -->
+    <div class="bg-[#002B5B] text-white text-xs py-2 px-4 shadow-md border-b border-blue-900/50 font-inter">
+        <div class="container mx-auto max-w-5xl flex flex-wrap items-center justify-between gap-3">
+            <div class="flex items-center space-x-2">
+                <span
+                    class="bg-[#FED700] text-[#293C88] px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider">DEV
+                    PROTOTYPE</span>
+                <span class="font-medium text-slate-200">Edelweiss Learning Center Theme Form</span>
+            </div>
+            <div class="flex items-center space-x-3">
+                <button onclick="toggleDevPanel()"
+                    class="bg-[#FED700] hover:bg-[#e5c200] text-[#293C88] px-3 py-1 rounded-full transition font-semibold text-xs flex items-center gap-1.5 shadow-sm">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                    </svg>
+                    View Field Specs & Payload
+                </button>
+                <button onclick="triggerSimulatedError()"
+                    class="bg-red-600 hover:bg-red-700 text-white px-2.5 py-1 rounded-full transition text-xs font-medium">
+                    Simulate Validation Errors
+                </button>
+                <button onclick="resetFormState()"
+                    class="bg-slate-700 hover:bg-slate-600 text-slate-200 px-2.5 py-1 rounded-full transition text-xs font-medium">
+                    Reset Form
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Header Navigation (Edelweiss Learning Center Navbar Style) -->
+
+    <!-- Hero Banner Section -->
+    <section class="hero-banner text-white py-12 md:py-16 px-4 relative overflow-hidden">
+        <div class="absolute -right-10 -bottom-10 w-64 h-64 bg-[#FED700]/10 rounded-full blur-3xl pointer-events-none">
+        </div>
+        <div class="container mx-auto max-w-4xl text-center relative z-10">
+            <span
+                class="inline-block bg-[#FFF4BA]/20 text-[#FFF4BA] text-xs font-semibold px-4 py-1.5 rounded-full mb-4 border border-[#FFF4BA]/30 uppercase tracking-widest">
+                Edelweiss Open House 2026
+            </span>
+            <h1 class="text-3xl md:text-5xl font-extrabold mb-4 leading-tight">
+                A Safe Place to Learn, <span class="text-[#FED700]">Grow, and Shine</span>
+            </h1>
+            <p class="text-sm md:text-lg text-slate-200 max-w-2xl mx-auto leading-relaxed">
+                Bergabunglah dalam acara Open House Edelweiss School. Dapatkan berbagai penawaran eksklusif, bebas biaya
+                pendaftaran, dan asesmen psikologi gratis!
+            </p>
+        </div>
+    </section>
+
+    <!-- Main Form Section -->
+    <main id="registration-form" class="flex-grow py-12 px-4">
+        <div class="container mx-auto max-w-2xl">
+
+            <!-- Form Card -->
+            <div
+                class="bg-white rounded-3xl form-card p-6 sm:p-10 border-t-8 border-[#293C88] relative overflow-hidden">
+
+                <!-- Decorative Top Yellow Stripe -->
+                <div class="absolute top-0 right-0 w-32 h-1 bg-[#FED700]"></div>
+
+                <div id="form-container">
+                    <div class="text-center mb-8">
+                        <span
+                            class="text-xs font-bold text-[#293C88] uppercase tracking-widest bg-indigo-50 px-3 py-1 rounded-full inline-block mb-2">Formulir
+                            Pendaftaran</span>
+                        <h2 class="text-2xl sm:text-3xl font-extrabold text-[#293C88]">Reserve Your Place Now!</h2>
+                        <p class="text-gray-500 mt-1.5 text-xs sm:text-sm">Isi formulir di bawah ini untuk mengamankan
+                            kuota kehadiran Anda.</p>
+                        <div class="w-16 h-1 bg-[#FED700] mx-auto rounded-full mt-3"></div>
+                    </div>
+
+                    <form id="main-form" class="space-y-6" onsubmit="return false;">
+                        <!-- Hidden CSRF Token Mock & Hidden Open House Event Input -->
+                        <input type="hidden" name="_token"
+                            value="MOCK_CSRF_TOKEN_QDg6ZEPYmksCgJ50UEQrTpN2dpahoPMq2UasGuBd">
+                        <input type="hidden" name="events[]" value="2">
+
+                        <!-- Form Inputs Grid -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+                            <!-- Parent's Name -->
+                            <div>
+                                <label for="nama_ortu"
+                                    class="block text-xs font-bold text-[#293C88] uppercase tracking-wider mb-1.5">
+                                    Parent's Name <span class="text-red-500">*</span>
+                                </label>
+                                <input type="text" id="nama_ortu" name="nama_ortu" placeholder="e.g. Budi Santoso"
+                                    class="w-full px-4 py-2.5 bg-[#F8FAFC] border border-gray-200 rounded-xl text-sm text-gray-800 focus:ring-2 focus:ring-[#293C88] focus:border-[#293C88] focus:bg-white transition">
+                                <span class="text-xs text-red-500 mt-1 block min-h-[16px]" id="error-nama_ortu"></span>
+                            </div>
+
+                            <!-- Child's Name -->
+                            <div>
+                                <label for="nama_anak"
+                                    class="block text-xs font-bold text-[#293C88] uppercase tracking-wider mb-1.5">
+                                    Child's Name <span class="text-red-500">*</span>
+                                </label>
+                                <input type="text" id="nama_anak" name="nama_anak" placeholder="e.g. Kevin Santoso"
+                                    class="w-full px-4 py-2.5 bg-[#F8FAFC] border border-gray-200 rounded-xl text-sm text-gray-800 focus:ring-2 focus:ring-[#293C88] focus:border-[#293C88] focus:bg-white transition">
+                                <span class="text-xs text-red-500 mt-1 block min-h-[16px]" id="error-nama_anak"></span>
+                            </div>
+
+                            <!-- Child's Date of Birth -->
+                            <div>
+                                <label for="tanggal_lahir_anak"
+                                    class="block text-xs font-bold text-[#293C88] uppercase tracking-wider mb-1.5">
+                                    Child's Date of Birth <span class="text-red-500">*</span>
+                                </label>
+                                <input type="date" id="tanggal_lahir_anak" name="tanggal_lahir_anak"
+                                    class="w-full px-4 py-2.5 bg-[#F8FAFC] border border-gray-200 rounded-xl text-sm text-gray-800 focus:ring-2 focus:ring-[#293C88] focus:border-[#293C88] focus:bg-white transition">
+                                <span class="text-xs text-red-500 mt-1 block min-h-[16px]"
+                                    id="error-tanggal_lahir_anak"></span>
+                            </div>
+
+                            <!-- School Type Category Radios -->
+                            <div class="md:col-span-2 space-y-2">
+                                <label class="block text-xs font-bold text-[#293C88] uppercase tracking-wider">
+                                    School Category <span class="text-red-500">*</span>
+                                </label>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-[#F8FAFC] p-3 rounded-xl border border-gray-200">
+                                    <label class="flex items-center p-2.5 rounded-lg bg-white hover:bg-amber-50/50 border border-gray-200 cursor-pointer transition">
+                                        <input type="radio" name="school_type" value="formal" id="school_type_formal" checked
+                                            class="h-4 w-4 text-[#293C88] border-gray-300 focus:ring-[#293C88] cursor-pointer">
+                                        <span class="ml-2.5 text-sm font-semibold text-gray-800">Formal Schools</span>
+                                    </label>
+                                    <label class="flex items-center p-2.5 rounded-lg bg-white hover:bg-amber-50/50 border border-gray-200 cursor-pointer transition">
+                                        <input type="radio" name="school_type" value="homeschooling" id="school_type_homeschooling"
+                                            class="h-4 w-4 text-[#293C88] border-gray-300 focus:ring-[#293C88] cursor-pointer">
+                                        <span class="ml-2.5 text-sm font-semibold text-gray-800">Edelweiss Academia Homeschooling</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Programme of Interest Dropdown -->
+                            <div class="md:col-span-2">
+                                <label for="id_event_kelas"
+                                    class="block text-xs font-bold text-[#293C88] uppercase tracking-wider mb-1.5">
+                                    Programme of Interest <span class="text-red-500">*</span>
+                                </label>
+                                <select id="id_event_kelas" name="id_event_kelas"
+                                    class="w-full px-4 py-2.5 bg-[#F8FAFC] border border-gray-200 rounded-xl text-sm text-gray-800 focus:ring-2 focus:ring-[#293C88] focus:border-[#293C88] focus:bg-white transition">
+                                    <option value="" disabled selected>Select a Programme...</option>
+                                </select>
+                                <span class="text-xs text-red-500 mt-1 block min-h-[16px]"
+                                    id="error-id_event_kelas"></span>
+                            </div>
+
+                            <!-- Contact Number WhatsApp -->
+                            <div class="md:col-span-2">
+                                <label for="no_whatsapp"
+                                    class="block text-xs font-bold text-[#293C88] uppercase tracking-wider mb-1.5">
+                                    Contact Number (WhatsApp) <span class="text-red-500">*</span>
+                                </label>
+                                <input type="tel" id="no_whatsapp" name="no_whatsapp" pattern="^[0-9+ ]+$"
+                                    placeholder="081234567890"
+                                    class="w-full px-4 py-2.5 bg-[#F8FAFC] border border-gray-200 rounded-xl text-sm text-gray-800 focus:ring-2 focus:ring-[#293C88] focus:border-[#293C88] focus:bg-white transition">
+                                <span class="text-xs text-gray-400 text-[11px] mt-1 block">Format: Angka, tanda (+), dan
+                                    spasi.</span>
+                                <span class="text-xs text-red-500 mt-1 block min-h-[16px]"
+                                    id="error-no_whatsapp"></span>
+                            </div>
+
+                            <!-- Email Address -->
+                            <div class="md:col-span-2">
+                                <div class="flex justify-between items-center mb-1.5">
+                                    <label for="email"
+                                        class="block text-xs font-bold text-[#293C88] uppercase tracking-wider">
+                                        Email Address <span class="text-red-500">*</span>
+                                    </label>
+                                    <span class="text-[11px] text-[#293C88] font-medium">Test: 'exist@example.com' untuk
+                                        simulasi email ganda</span>
+                                </div>
+                                <input type="email" id="email" name="email" placeholder="you@example.com"
+                                    class="w-full px-4 py-2.5 bg-[#F8FAFC] border border-gray-200 rounded-xl text-sm text-gray-800 focus:ring-2 focus:ring-[#293C88] focus:border-[#293C88] focus:bg-white transition">
+                                <span class="text-xs text-red-500 mt-1 block min-h-[16px]" id="error-email"></span>
+                            </div>
+
+                            <!-- Address -->
+                            <div class="md:col-span-2">
+                                <label for="alamat"
+                                    class="block text-xs font-bold text-[#293C88] uppercase tracking-wider mb-1.5">
+                                    Address <span class="text-red-500">*</span>
+                                </label>
+                                <textarea id="alamat" name="alamat" rows="3" placeholder="Enter full home address..."
+                                    class="w-full px-4 py-2.5 bg-[#F8FAFC] border border-gray-200 rounded-xl text-sm text-gray-800 focus:ring-2 focus:ring-[#293C88] focus:border-[#293C88] focus:bg-white transition"></textarea>
+                                <span class="text-xs text-red-500 mt-1 block min-h-[16px]" id="error-alamat"></span>
+                            </div>
+
+                            <!-- How did you hear about us? -->
+                            <div class="md:col-span-2">
+                                <label for="id_event_sumber"
+                                    class="block text-xs font-bold text-[#293C88] uppercase tracking-wider mb-1.5">
+                                    How did you hear about us? <span class="text-red-500">*</span>
+                                </label>
+                                <select id="id_event_sumber" name="id_event_sumber"
+                                    class="w-full px-4 py-2.5 bg-[#F8FAFC] border border-gray-200 rounded-xl text-sm text-gray-800 focus:ring-2 focus:ring-[#293C88] focus:border-[#293C88] focus:bg-white transition">
+                                    <option value="" disabled selected>Select a source...</option>
+                                    <option value="1">Banner</option>
+                                    <option value="2">Billboard</option>
+                                    <option value="3">Google Search</option>
+                                    <option value="4">WhatsApp</option>
+                                    <option value="5">Instagram</option>
+                                    <option value="6">Facebook</option>
+                                    <option value="7">Website</option>
+                                    <option value="8">Friend/Relative</option>
+                                    <option value="9">Student/Alumni</option>
+                                    <option value="10">Now! Jakarta</option>
+                                    <option value="11">Indonesia Expat</option>
+                                    <option value="13">Tiktok</option>
+                                    <option value="14">Threads</option>
+                                    <option value="12">Other</option>
+                                </select>
+                                <span class="text-xs text-red-500 mt-1 block min-h-[16px]"
+                                    id="error-id_event_sumber"></span>
+                            </div>
+                        </div>
+
+                        <!-- Open House Payment & Assessment Section (Theme Styled) -->
+                        <div id="payment-section"
+                            class="mt-6 border-t border-gray-200 pt-6 bg-[#FFFDF0] -mx-6 px-6 py-6 rounded-b-2xl border border-amber-200">
+                            <div class="flex items-center space-x-2 mb-3">
+                                <span
+                                    class="p-1.5 bg-[#FED700] text-[#293C88] rounded-lg text-xs font-extrabold uppercase tracking-wider">Open
+                                    House Attendance</span>
+                            </div>
+                            <h3 class="text-lg font-bold text-[#293C88]">Confirm Open House Attendance</h3>
+
+                            <!-- Session Radio Selector -->
+                            <div class="my-4 space-y-3">
+                                <label class="block text-xs font-bold text-[#293C88] uppercase tracking-wider mb-1">
+                                    Select Open House Session / Arrival Time <span class="text-red-500">*</span>
+                                </label>
+                                <p class="text-xs text-gray-600 mb-3">Please select your preferred arrival time and session for the Open House.</p>
+
+                                <div id="assessment-session-container" class="space-y-3">
+                                    <!-- Hari 1 -->
+                                    <div
+                                        class="bg-white p-3.5 rounded-xl border border-amber-200/80 shadow-sm space-y-2">
+                                        <div
+                                            class="text-xs font-bold text-[#293C88] flex items-center gap-1.5 border-b border-gray-100 pb-1.5">
+                                            <span>📅 Hari 1: Sabtu, 8 Agustus 2026</span>
+                                        </div>
+                                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1">
+                                            <label
+                                                class="flex items-center p-2 rounded-lg bg-gray-50 hover:bg-amber-50/60 border border-gray-200 cursor-pointer transition">
+                                                <input type="radio" name="id_event_oh_session" value="1" id="session-1"
+                                                    class="h-4 w-4 text-[#293C88] border-gray-300 focus:ring-[#293C88] cursor-pointer">
+                                                <span class="ml-2 text-xs font-semibold text-gray-700">08.00 -
+                                                    10.00</span>
+                                            </label>
+                                            <label
+                                                class="flex items-center p-2 rounded-lg bg-gray-50 hover:bg-amber-50/60 border border-gray-200 cursor-pointer transition">
+                                                <input type="radio" name="id_event_oh_session" value="2" id="session-2"
+                                                    class="h-4 w-4 text-[#293C88] border-gray-300 focus:ring-[#293C88] cursor-pointer">
+                                                <span class="ml-2 text-xs font-semibold text-gray-700">10.00 -
+                                                    12.00</span>
+                                            </label>
+                                            <label
+                                                class="flex items-center p-2 rounded-lg bg-gray-50 hover:bg-amber-50/60 border border-gray-200 cursor-pointer transition">
+                                                <input type="radio" name="id_event_oh_session" value="3" id="session-3"
+                                                    class="h-4 w-4 text-[#293C88] border-gray-300 focus:ring-[#293C88] cursor-pointer">
+                                                <span class="ml-2 text-xs font-semibold text-gray-700">13.00 -
+                                                    15.00</span>
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                    <!-- Hari 2 -->
+                                    <div
+                                        class="bg-white p-3.5 rounded-xl border border-amber-200/80 shadow-sm space-y-2">
+                                        <div
+                                            class="text-xs font-bold text-[#293C88] flex items-center gap-1.5 border-b border-gray-100 pb-1.5">
+                                            <span>📅 Hari 2: Sabtu, 15 Agustus 2026</span>
+                                        </div>
+                                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1">
+                                            <label
+                                                class="flex items-center p-2 rounded-lg bg-gray-50 hover:bg-amber-50/60 border border-gray-200 cursor-pointer transition">
+                                                <input type="radio" name="id_event_oh_session" value="4" id="session-4"
+                                                    class="h-4 w-4 text-[#293C88] border-gray-300 focus:ring-[#293C88] cursor-pointer">
+                                                <span class="ml-2 text-xs font-semibold text-gray-700">08.00 -
+                                                    10.00</span>
+                                            </label>
+                                            <label
+                                                class="flex items-center p-2 rounded-lg bg-gray-50 hover:bg-amber-50/60 border border-gray-200 cursor-pointer transition">
+                                                <input type="radio" name="id_event_oh_session" value="5" id="session-5"
+                                                    class="h-4 w-4 text-[#293C88] border-gray-300 focus:ring-[#293C88] cursor-pointer">
+                                                <span class="ml-2 text-xs font-semibold text-gray-700">10.00 -
+                                                    12.00</span>
+                                            </label>
+                                            <label
+                                                class="flex items-center p-2 rounded-lg bg-gray-50 hover:bg-amber-50/60 border border-gray-200 cursor-pointer transition">
+                                                <input type="radio" name="id_event_oh_session" value="6" id="session-6"
+                                                    class="h-4 w-4 text-[#293C88] border-gray-300 focus:ring-[#293C88] cursor-pointer">
+                                                <span class="ml-2 text-xs font-semibold text-gray-700">13.00 -
+                                                    15.00</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                                <span class="text-xs text-red-500 mt-1 block min-h-[16px]"
+                                    id="error-id_event_oh_session"></span>
+                            </div>
+
+                            <p
+                                class="text-xs sm:text-sm text-gray-700 mt-4 mb-4 border-t border-amber-200/60 pt-4 leading-relaxed">
+                                To secure these exclusive benefits, please complete the <strong
+                                    class="text-[#293C88]">Rp 500,000 booking fee</strong> payment. This investment
+                                grants you full access to all our Open House offers.
+                            </p>
+
+                            <!-- Payment Method Radios -->
+                            <div
+                                class="flex items-center space-x-6 mb-4 bg-white p-4 rounded-xl border border-amber-200/80 shadow-sm">
+                                <div class="flex items-center">
+                                    <input type="radio" name="id_tipe_pembayaran" value="1" id="pay_now"
+                                        class="h-4 w-4 text-[#293C88] border-gray-300 focus:ring-[#293C88] cursor-pointer">
+                                    <label for="pay_now"
+                                        class="ml-2.5 text-sm font-semibold text-gray-800 cursor-pointer">Pay
+                                        Now</label>
+                                </div>
+                                <div class="flex items-center">
+                                    <input type="radio" name="id_tipe_pembayaran" value="2" id="pay_spot"
+                                        class="h-4 w-4 text-[#293C88] border-gray-300 focus:ring-[#293C88] cursor-pointer">
+                                    <label for="pay_spot"
+                                        class="ml-2.5 text-sm font-semibold text-gray-800 cursor-pointer">Pay
+                                        On-site</label>
+                                </div>
+                            </div>
+                            <span class="text-xs text-red-500 mt-1 block min-h-[16px]"
+                                id="error-id_tipe_pembayaran"></span>
+
+                            <!-- Proof of Payment Upload Toggle -->
+                            <div id="upload-section"
+                                class="mt-4 bg-white p-4 rounded-xl border border-amber-300 space-y-3"
+                                style="display: none;">
+                                <label class="block text-xs font-bold text-[#293C88] uppercase tracking-wider mb-1">
+                                    Upload Booking Fee Proof of Payment <span class="text-red-500">*</span>
+                                </label>
+                                <input type="file" id="file_pembayaran" name="file_pembayaran"
+                                    accept="image/jpeg,image/png,image/jpg,application/pdf"
+                                    class="w-full text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-[#293C88] hover:file:bg-indigo-100 cursor-pointer border border-gray-200 rounded-lg p-1">
+                                <span class="text-[11px] text-gray-400 block">Accepted formats: JPEG, PNG, JPG, PDF (max
+                                    2MB)</span>
+                                <span class="text-xs text-red-500 mt-1 block min-h-[16px]"
+                                    id="error-file_pembayaran"></span>
+
+                                <div class="bg-[#FFF4BA] p-3 rounded-lg text-xs text-[#293C88] border border-amber-300">
+                                    💳 Please transfer the booking fee to: <span class="font-bold text-gray-900">BCA a/n
+                                        YAY SINAR PUTIH EDELWEISS 7510828768</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Security Badge -->
+                        <div
+                            class="bg-[#002B5B] text-white p-3.5 rounded-xl text-xs flex items-center justify-between shadow-inner">
+                            <div class="flex items-center space-x-2">
+                                <svg class="w-4 h-4 text-[#FED700]" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd"
+                                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                                        clip-rule="evenodd" />
+                                </svg>
+                                <span class="font-medium text-slate-200">Cloudflare Turnstile Verified (Prototype
+                                    Mode)</span>
+                            </div>
+                            <span class="text-[10px] text-[#FED700] uppercase tracking-widest font-bold">Secure
+                                SSL</span>
+                        </div>
+
+                        <!-- Submit Button (Edelweiss Primary Gold Button) -->
+                        <div class="mt-8">
+                            <button type="submit" id="submit-button"
+                                class="w-full btn-elc-primary font-extrabold py-4 px-6 rounded-full text-base tracking-wide shadow-lg uppercase">
+                                Submit Registration
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Success Message Display -->
+                <div id="success-message" style="display: none;" class="text-center py-10">
+                    <div
+                        class="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4 border-4 border-green-200">
+                        <svg class="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
+                        </svg>
+                    </div>
+                    <h2 class="text-2xl sm:text-3xl font-extrabold text-[#293C88]">Registration Successful!</h2>
+                    <p class="text-gray-600 mt-2 text-sm sm:text-base max-w-md mx-auto leading-relaxed">
+                        Thank you for registering. Our team will contact you shortly via WhatsApp with further
+                        confirmation. We look forward to seeing you!
+                    </p>
+
+                    <!-- Dev Debug Result Payload Box -->
+                    <div
+                        class="mt-6 bg-[#002B5B] text-left text-slate-200 p-4 rounded-2xl text-xs overflow-x-auto border border-blue-900 font-inter">
+                        <div class="text-xs font-mono text-[#FED700] font-bold mb-2 flex items-center justify-between">
+                            <span>HTTP POST Response: 200 OK</span>
+                            <span>JSON Data Payload Sent</span>
+                        </div>
+                        <pre id="success-payload-preview"
+                            class="font-mono text-[11px] leading-relaxed text-emerald-300"></pre>
+                    </div>
+
+                    <div class="mt-8">
+                        <button onclick="resetFormState()"
+                            class="btn-elc-navy font-bold py-3 px-8 rounded-full text-sm">
+                            Register Another (Reset Form)
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Footer (Matching Edelweiss Learning Center Style) -->
+    <footer class="bg-[#293C88] text-white py-8 border-t border-blue-900 font-inter">
+        <div class="container mx-auto max-w-5xl px-4 text-center">
+
+            <p class="text-xs text-slate-300">Empowering Education For a Better Future | Learn. Grow. Lead</p>
+            <p class="text-xs text-slate-400 mt-2">&copy; 2026 Edelweiss Learning Center. All Rights Reserved.</p>
+        </div>
+    </footer>
+
+    <!-- Developer Drawer / Modal for Payload Specs -->
+    <div id="dev-panel"
+        class="fixed inset-y-0 right-0 w-full max-w-md bg-[#002B5B] text-slate-100 shadow-2xl z-50 transform translate-x-full transition-transform duration-300 flex flex-col border-l border-blue-900 font-inter">
+        <div class="p-4 border-b border-blue-900 flex items-center justify-between bg-slate-950">
+            <div>
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <span class="w-2.5 h-2.5 rounded-full bg-[#FED700] animate-pulse"></span>
+                    Developer Specs & Live Payload
+                </h3>
+                <p class="text-[11px] text-slate-400">Backend form payload structure & field rules</p>
+            </div>
+            <button onclick="toggleDevPanel()" class="text-slate-400 hover:text-white p-1 rounded">
+                ✕
+            </button>
+        </div>
+
+        <div class="p-4 overflow-y-auto flex-grow space-y-4 text-xs font-mono">
+            <div>
+                <h4 class="text-[#FED700] font-bold text-[11px] uppercase tracking-wider mb-2">Endpoint & Form Specs
+                </h4>
+                <div class="bg-slate-900 p-3 rounded-xl border border-slate-800 space-y-1 text-slate-300">
+                    <div><span class="text-slate-500">Method:</span> POST</div>
+                    <div><span class="text-slate-500">Action:</span> https://event.edelweiss.sch.id/register</div>
+                    <div><span class="text-slate-500">Enctype:</span> multipart/form-data</div>
+                </div>
+            </div>
+
+            <div>
+                <h4 class="text-[#FED700] font-bold text-[11px] uppercase tracking-wider mb-2">Current Live Form Data
+                    Payload</h4>
+                <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 overflow-x-auto text-emerald-300">
+                    <pre id="live-payload-preview">// Fill form elements to inspect live payload state</pre>
+                </div>
+            </div>
+
+            <div>
+                <h4 class="text-[#FED700] font-bold text-[11px] uppercase tracking-wider mb-2">Form Schema & Rules</h4>
+                <ul class="bg-slate-900 p-3 rounded-xl border border-slate-800 space-y-2 text-slate-300 text-[11px]">
+                    <li><strong class="text-[#FED700]">events[]</strong>: Array (Default ID: 2=Open House). Hidden
+                        input.</li>
+                    <li><strong class="text-[#FED700]">nama_ortu</strong>: String. Req.</li>
+                    <li><strong class="text-[#FED700]">nama_anak</strong>: String. Req.</li>
+                    <li><strong class="text-[#FED700]">tanggal_lahir_anak</strong>: Date (YYYY-MM-DD). Req.</li>
+                    <li><strong class="text-[#FED700]">id_event_kelas</strong>: Integer ID (1-13). Req.</li>
+                    <li><strong class="text-[#FED700]">no_whatsapp</strong>: String (regex: ^[0-9+ ]+$). Req.</li>
+                    <li><strong class="text-[#FED700]">email</strong>: String email format. Unique validation. Req.</li>
+                    <li><strong class="text-[#FED700]">alamat</strong>: Text. Req.</li>
+                    <li><strong class="text-[#FED700]">id_event_sumber</strong>: Integer ID (1-12). Req.</li>
+                    <li><strong class="text-[#FED700]">id_event_oh_session</strong>: Integer ID (1-6 across Day 1 & Day 2). Req.</li>
+                    <li><strong class="text-[#FED700]">id_tipe_pembayaran</strong>: Integer ID (1=Pay Now, 2=Pay
+                        On-site). Req.</li>
+                    <li><strong class="text-[#FED700]">file_pembayaran</strong>: File (JPG/PNG/PDF max 2MB). Required
+                        ONLY if id_tipe_pembayaran=1.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript Logic -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const form = document.getElementById('main-form');
+            const paymentRadios = document.querySelectorAll('input[name="id_tipe_pembayaran"]');
+            const uploadSection = document.getElementById('upload-section');
+            const submitButton = document.getElementById('submit-button');
+            const formContainer = document.getElementById('form-container');
+            const successMessage = document.getElementById('success-message');
+            const emailInput = document.getElementById('email');
+            const emailError = document.getElementById('error-email');
+
+            let isEmailValid = true;
+
+            // Debounce helper
+            function debounce(func, wait) {
+                let timeout;
+                return function executedFunction(...args) {
+                    const later = () => {
+                        clearTimeout(timeout);
+                        func(...args);
+                    };
+                    clearTimeout(timeout);
+                    timeout = setTimeout(later, wait);
+                };
+            }
+
+            // Simulated Check Email endpoint logic
+            const checkEmail = debounce((email) => {
+                if (!email || !email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
+                    return;
+                }
+
+                if (email.toLowerCase() === 'exist@example.com' || email.toLowerCase().includes('duplicate')) {
+                    emailInput.classList.add('border-yellow-500');
+                    emailInput.classList.remove('border-gray-200', 'border-red-500');
+                    emailError.textContent = 'Email already registered';
+                    emailError.classList.remove('text-red-500');
+                    emailError.classList.add('text-amber-600');
+                    isEmailValid = 'needs-confirmation';
+                } else {
+                    emailError.textContent = '';
+                    emailError.classList.remove('text-amber-600');
+                    emailError.classList.add('text-red-500');
+                    emailInput.classList.remove('border-yellow-500', 'border-red-500');
+                    emailInput.classList.add('border-gray-200');
+                    isEmailValid = true;
+                }
+                updateLivePayloadPreview();
+            }, 300);
+
+            emailInput.addEventListener('input', (e) => checkEmail(e.target.value));
+
+            // Programme options dictionary
+            const formalProgrammes = [
+                { id: "1", label: "Kiddy 1" },
+                { id: "2", label: "Kiddy 2" },
+                { id: "3", label: "Kindergarten 1" },
+                { id: "4", label: "Kindergarten 2" },
+                { id: "5", label: "Primary 1" },
+                { id: "6", label: "Primary 2" },
+                { id: "7", label: "Primary 3" },
+                { id: "8", label: "Primary 4" },
+                { id: "9", label: "Primary 5" },
+                { id: "10", label: "Primary 6" },
+                { id: "11", label: "Secondary 1" },
+                { id: "12", label: "Secondary 2" },
+                { id: "13", label: "Secondary 3" }
+            ];
+
+            const homeschoolingProgrammes = [
+                { id: "101", label: "Primary 1" },
+                { id: "102", label: "Primary 2" },
+                { id: "103", label: "Primary 3" },
+                { id: "104", label: "Primary 4" },
+                { id: "105", label: "Primary 5" },
+                { id: "106", label: "Primary 6" },
+                { id: "107", label: "Lower Secondary 1" },
+                { id: "108", label: "Lower Secondary 2" },
+                { id: "109", label: "Lower Secondary 3" },
+                { id: "110", label: "Upper Secondary 1" },
+                { id: "111", label: "Upper Secondary 2" },
+                { id: "112", label: "Upper Secondary 3" }
+            ];
+
+            const schoolTypeRadios = document.querySelectorAll('input[name="school_type"]');
+            const kelasSelect = document.getElementById('id_event_kelas');
+
+            function updateProgrammeOptions() {
+                const selectedType = document.querySelector('input[name="school_type"]:checked')?.value || 'formal';
+                const options = selectedType === 'homeschooling' ? homeschoolingProgrammes : formalProgrammes;
+
+                kelasSelect.innerHTML = '<option value="" disabled selected>Select a Programme...</option>';
+                options.forEach(item => {
+                    const opt = document.createElement('option');
+                    opt.value = item.id;
+                    opt.textContent = item.label;
+                    kelasSelect.appendChild(opt);
+                });
+                updateLivePayloadPreview();
+            }
+
+            schoolTypeRadios.forEach(radio => {
+                radio.addEventListener('change', updateProgrammeOptions);
+            });
+
+            // Toggle proof of payment upload box when Pay Now is selected
+            paymentRadios.forEach(radio => {
+                radio.addEventListener('change', function () {
+                    if (this.value === '1' && this.checked) {
+                        uploadSection.style.display = 'block';
+                    } else {
+                        uploadSection.style.display = 'none';
+                    }
+                    updateLivePayloadPreview();
+                });
+            });
+
+            // Input listener on form to update live payload preview
+            form.addEventListener('change', updateLivePayloadPreview);
+            form.addEventListener('input', updateLivePayloadPreview);
+
+            // WhatsApp formatting input rule
+            const whatsappInput = document.getElementById('no_whatsapp');
+            whatsappInput.addEventListener('input', function (e) {
+                const value = e.target.value;
+                if (value && !value.match(/^[0-9+ ]*$/)) {
+                    e.target.value = value.replace(/[^0-9+ ]/g, '');
+                }
+            });
+
+            // Display form errors
+            function displayErrors(errors) {
+                document.querySelectorAll('span[id^="error-"]').forEach(span => {
+                    span.textContent = '';
+                });
+                document.querySelectorAll('input, select, textarea').forEach(input => {
+                    input.classList.remove('border-red-500');
+                });
+
+                for (const field in errors) {
+                    if (errors.hasOwnProperty(field)) {
+                        const targetField = field.includes('.') ? field.split('.')[0] : field;
+                        const errorElement = document.getElementById(`error-${targetField}`);
+                        let inputElement = document.querySelector(`[name="${targetField}"]`);
+
+                        if (errorElement) {
+                            errorElement.textContent = errors[field][0];
+                        }
+
+                        if (inputElement && inputElement.type !== 'checkbox' && inputElement.type !== 'radio') {
+                            inputElement.classList.add('border-red-500');
+                        }
+                    }
+                }
+            }
+
+            // Submit handler
+            form.addEventListener('submit', async function (event) {
+                event.preventDefault();
+
+                if (isEmailValid === 'needs-confirmation') {
+                    const result = await Swal.fire({
+                        title: 'Email Already Registered',
+                        html: `
+                            <p class="mb-4 text-sm text-gray-700">This email has already been registered for an event.</p>
+                            <p class="text-xs text-gray-600 font-semibold mb-2">Do you want to:</p>
+                            <ul class="text-left text-xs space-y-1 bg-gray-50 p-3 rounded-lg border border-gray-200">
+                                <li>• Register for additional events with the same email</li>
+                                <li>• Or use a different email address?</li>
+                            </ul>
+                        `,
+                        icon: 'question',
+                        showCancelButton: true,
+                        confirmButtonText: 'Continue with this email',
+                        cancelButtonText: 'Use different email',
+                        confirmButtonColor: '#293C88',
+                        cancelButtonColor: '#64748b',
+                        reverseButtons: true
+                    });
+
+                    if (!result.isConfirmed) {
+                        emailInput.focus();
+                        return;
+                    }
+                }
+
+                // Simulate loading
+                submitButton.disabled = true;
+                submitButton.textContent = 'Submitting...';
+                submitButton.classList.add('opacity-50', 'cursor-not-allowed');
+
+                setTimeout(() => {
+                    // Extract payload object
+                    const payload = getPayloadObject();
+
+                    // Show success
+                    formContainer.style.display = 'none';
+                    successMessage.style.display = 'block';
+                    document.getElementById('success-payload-preview').textContent = JSON.stringify(payload, null, 2);
+                }, 800);
+            });
+
+            function getPayloadObject() {
+                const formData = new FormData(form);
+                const obj = {};
+                const events = ["2"];
+
+                formData.forEach((value, key) => {
+                    if (key !== 'events[]') {
+                        if (value instanceof File) {
+                            obj[key] = value.name ? `[File: ${value.name} (${(value.size / 1024).toFixed(1)} KB)]` : null;
+                        } else {
+                            obj[key] = value;
+                        }
+                    }
+                });
+                obj['events'] = events;
+                return obj;
+            }
+
+            function updateLivePayloadPreview() {
+                const payload = getPayloadObject();
+                const preview = document.getElementById('live-payload-preview');
+                if (preview) {
+                    preview.textContent = JSON.stringify(payload, null, 2);
+                }
+            }
+
+            // Expose helper functions globally for dev toolbar buttons
+            window.toggleDevPanel = function () {
+                const panel = document.getElementById('dev-panel');
+                panel.classList.toggle('translate-x-full');
+            };
+
+            window.triggerSimulatedError = function () {
+                displayErrors({
+                    'nama_ortu': ['Parent name is required.'],
+                    'nama_anak': ['Child name is required.'],
+                    'tanggal_lahir_anak': ['Child date of birth is required.'],
+                    'id_event_kelas': ['Programme of interest must be selected.'],
+                    'no_whatsapp': ['Valid WhatsApp contact number is required.'],
+                    'email': ['Valid email address is required.'],
+                    'alamat': ['Full home address is required.'],
+                    'id_event_sumber': ['Please select how you heard about us.'],
+                    'id_event_oh_session': ['Profiling assessment session must be selected.'],
+                    'id_tipe_pembayaran': ['Payment type must be selected.']
+                });
+                Swal.fire({
+                    title: 'Simulated Errors Triggered',
+                    text: 'Field-level red border highlights and error messages have been populated for review.',
+                    icon: 'warning',
+                    confirmButtonColor: '#293C88'
+                });
+            };
+
+            window.resetFormState = function () {
+                form.reset();
+                formContainer.style.display = 'block';
+                successMessage.style.display = 'none';
+                uploadSection.style.display = 'none';
+                displayErrors({});
+                submitButton.disabled = false;
+                submitButton.textContent = 'Submit Registration';
+                submitButton.classList.remove('opacity-50', 'cursor-not-allowed');
+                updateProgrammeOptions();
+                updateLivePayloadPreview();
+            };
+
+            // Initialize
+            updateProgrammeOptions();
+            updateLivePayloadPreview();
+        });
+    </script>
+</body>
+
+</html>
