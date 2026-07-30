@@ -2,6 +2,7 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "openhouse2026",
   "compatibility_date": "2026-07-30",
+  "pages_build_output_dir": ".next",
   "observability": {
     "enabled": true
   },
