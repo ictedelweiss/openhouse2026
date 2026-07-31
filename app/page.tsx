@@ -5,6 +5,7 @@ import { LevelQuota, SavedParentSession } from '@/types/registration';
 import RegistrationModal from '@/components/RegistrationModal';
 import { School, Home, ArrowRightLeft, Database, RefreshCw, Zap, CheckCircle2, ChevronRight, Users, Sparkles, ShieldCheck } from 'lucide-react';
 import Link from 'next/link';
+import { API_BASE_URL } from '@/lib/api-config';
 
 const INITIAL_MOCK_LEVELS: LevelQuota[] = [
   // 1. EDELWEISS FORMAL SCHOOL (Preschool + P1 + S1)
@@ -294,7 +295,7 @@ export default function OpenHousePage() {
   const fetchQuotaData = async () => {
     setIsRefreshing(true);
     try {
-      const res = await fetch('/api.php?action=get_data');
+      const res = await fetch(`${API_BASE_URL}?action=get_data`);
       if (res.ok) {
         const json = await res.json();
         if (json.status === 'success' && Array.isArray(json.data) && json.data.length > 0) {
@@ -604,7 +605,7 @@ export default function OpenHousePage() {
             setSelectedLevelId(null);
           }}
           onSuccess={handleRegistrationSuccess}
-          apiBaseUrl="/api.php"
+          apiBaseUrl={API_BASE_URL}
         />
       )}
     </main>

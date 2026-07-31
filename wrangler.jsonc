@@ -2,8 +2,10 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "openhouse2026",
   "compatibility_date": "2026-07-30",
+  "main": ".open-next/worker.js",
   "assets": {
-    "directory": ".next"
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
   },
   "observability": {
     "enabled": true

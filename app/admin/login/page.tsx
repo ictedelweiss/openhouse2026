@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ShieldCheck, Lock, User, Sparkles, ArrowLeft, KeyRound } from 'lucide-react';
+import { API_BASE_URL } from '@/lib/api-config';
 
 export default function AdminLoginPage() {
   const [username, setUsername] = useState('');
@@ -17,7 +18,7 @@ export default function AdminLoginPage() {
     setErrorMsg(null);
 
     try {
-      const res = await fetch('/api.php?action=admin_login', {
+      const res = await fetch(`${API_BASE_URL}?action=admin_login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password })

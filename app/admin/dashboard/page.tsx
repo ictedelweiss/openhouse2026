@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import AdminNavbar from '@/components/AdminNavbar';
 import { Users, School, Download, Search, Trash2, ArrowRightLeft, UserCheck, RefreshCw, Image as ImageIcon, Upload, Eye, X, CheckCircle, CreditCard } from 'lucide-react';
+import { API_BASE_URL } from '@/lib/api-config';
 
 interface RegistrationRecord {
   id: number;
@@ -132,7 +133,7 @@ export default function AdminDashboardPage() {
   const fetchRegistrations = async () => {
     setIsRefreshing(true);
     try {
-      const res = await fetch('/api.php?action=get_registrations');
+      const res = await fetch(`${API_BASE_URL}?action=get_registrations`);
       if (res.ok) {
         const json = await res.json();
         if (json.status === 'success' && Array.isArray(json.data)) {
@@ -152,11 +153,7 @@ export default function AdminDashboardPage() {
     const file = e.target.files?.[0];
     if (file) {
       setAdminUploadFileName(file.name);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setAdminUploadFile(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+      setAdminUploadFile(file as unknown as string); // Store file object temporarily
     }
   };
 
@@ -167,29 +164,42 @@ export default function AdminDashboardPage() {
       return;
     }
 
-    try {
-      const res = await fetch('/api.php?action=upload_payment_proof', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id: uploadModalData.id,
-          payment_proof: adminUploadFile
-        })
-      });
+    let fileUrl = '';
 
-      const result = await res.json();
-      if (result.status === 'success') {
-        alert(`Bukti pembayaran untuk ${uploadModalData.childName} berhasil di-upload!`);
+    try {
+      // Upload file via FormData to the server
+      const fileInput = document.querySelector('#admin-proof-file') as HTMLInputElement;
+      const file = fileInput?.files?.[0];
+
+      if (file) {
+        const uploadData = new FormData();
+        uploadData.append('file', file);
+        uploadData.append('id', String(uploadModalData.id));
+
+        const res = await fetch(`${API_BASE_URL}?action=upload_payment_proof`, {
+          method: 'POST',
+          body: uploadData
+        });
+
+        const result = await res.json();
+        if (result.status === 'success') {
+          fileUrl = result.file_url || '';
+          alert(`Bukti pembayaran untuk ${uploadModalData.childName} berhasil di-upload!`);
+        } else {
+          alert(result.message || 'Gagal upload bukti pembayaran.');
+          return;
+        }
       }
     } catch (err) {
       console.log('Mock upload state saved');
+      fileUrl = 'uploaded_locally';
     }
 
     // Update state local
     setRegistrations((prev) =>
       prev.map((item) =>
         item.id === uploadModalData.id
-          ? { ...item, payment_proof: adminUploadFile }
+          ? { ...item, payment_proof: fileUrl || adminUploadFile }
           : item
       )
     );
@@ -205,7 +215,7 @@ export default function AdminDashboardPage() {
     }
 
     try {
-      const res = await fetch('/api.php?action=delete_registration', {
+      const res = await fetch(`${API_BASE_URL}?action=delete_registration`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id })
@@ -475,19 +485,19 @@ export default function AdminDashboardPage() {
                             {item.payment_method === 'pay_now' ? 'Pay Now (Transfer)' : 'Pay On-site (Di Lokasi)'}
                           </span>
 
-                          {/* Tombol Lihat Bukti Bayar (Pop-up) jika bukti tersedia */}
+                          {/* Direct Download Bukti Bayar */}
                           {item.payment_proof ? (
-                            <button
-                              onClick={() => setPreviewModalData({
-                                childName: item.child_name,
-                                ticketCode: item.ticket_code,
-                                proofUrl: item.payment_proof || DUMMY_RECEIPT_IMG
-                              })}
-                              className="w-full bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-300 font-bold px-2.5 py-1 rounded-lg text-[11px] transition flex items-center justify-center gap-1 shadow-2xs"
+                            <a
+                              href={item.payment_proof || DUMMY_RECEIPT_IMG}
+                              download={`Bukti_Bayar_${item.child_name.replace(/\s+/g, '_')}_${item.ticket_code}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="w-full bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-300 font-bold px-2.5 py-1 rounded-lg text-[11px] transition flex items-center justify-center gap-1 shadow-2xs cursor-pointer"
+                              title="Klik untuk langsung mengunduh bukti pembayaran"
                             >
-                              <Eye className="w-3.5 h-3.5 text-emerald-600" />
-                              <span>Lihat Bukti Bayar</span>
-                            </button>
+                              <Download className="w-3.5 h-3.5 text-emerald-600" />
+                              <span>Download Bukti Bayar</span>
+                            </a>
                           ) : (
                             /* Tombol Upload Bukti Pembayaran untuk Pay On-site / Belum Upload */
                             <button
@@ -509,7 +519,7 @@ export default function AdminDashboardPage() {
                         <button
                           onClick={() => handleDelete(item.id, item.child_name)}
                           className="bg-rose-50 hover:bg-rose-100 text-rose-600 p-2 rounded-xl transition shadow-xs"
-                          title="Hapus Data &amp; Kembalikan Kuota"
+                          title="Hapus Data & Kembalikan Kuota"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -523,55 +533,6 @@ export default function AdminDashboardPage() {
         </div>
       </main>
 
-      {/* 1. MODAL POP UP PREVIEW BUKTI PEMBAYARAN */}
-      {previewModalData && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/75 backdrop-blur-sm animate-fadeIn"
-          onClick={() => setPreviewModalData(null)}
-        >
-          <div
-            className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 relative"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              onClick={() => setPreviewModalData(null)}
-              className="absolute top-4 right-4 bg-slate-100 hover:bg-slate-200 text-slate-700 p-2 rounded-full transition"
-            >
-              <X className="w-5 h-5" />
-            </button>
-
-            <div className="flex items-center gap-2 mb-2">
-              <span className="bg-emerald-100 text-emerald-800 text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full flex items-center gap-1">
-                <CheckCircle className="w-3 h-3 text-emerald-600" /> BUKTI TERVERIFIKASI
-              </span>
-            </div>
-
-            <h3 className="text-lg font-bold text-[#002B5B]">
-              Bukti Pembayaran Pendaftaran
-            </h3>
-            <p className="text-xs text-slate-500 mb-4">
-              Pendaftar: <strong>{previewModalData.childName}</strong> ({previewModalData.ticketCode})
-            </p>
-
-            <div className="bg-slate-100 rounded-2xl p-2 border border-slate-200 flex items-center justify-center overflow-hidden max-h-[60vh]">
-              <img
-                src={previewModalData.proofUrl}
-                alt="Bukti Bayar"
-                className="max-h-[55vh] w-auto object-contain rounded-xl shadow-sm"
-              />
-            </div>
-
-            <div className="mt-4 pt-3 border-t border-slate-100 flex justify-end">
-              <button
-                onClick={() => setPreviewModalData(null)}
-                className="bg-[#293C88] hover:bg-[#1d2c68] text-white text-xs font-bold py-2.5 px-6 rounded-xl transition"
-              >
-                Tutup Preview
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* 2. MODAL POP UP UPLOAD BUKTI PEMBAYARAN (UNTUK PAY ON-SITE) */}
       {uploadModalData && (
@@ -609,6 +570,7 @@ export default function AdminDashboardPage() {
                 <label className="block text-xs font-bold text-slate-700 mb-1 cursor-pointer hover:text-[#293C88]">
                   Pilih Struk / Foto Bukti Bayar
                   <input
+                    id="admin-proof-file"
                     type="file"
                     accept="image/*,.pdf"
                     required

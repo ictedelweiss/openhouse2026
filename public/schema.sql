@@ -35,7 +35,7 @@ CREATE TABLE slots (
     status ENUM('available', 'reserved', 'booked') DEFAULT 'available',
     holder_name VARCHAR(100) NULL,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN_KEY (level_id) REFERENCES levels(id) ON DELETE CASCADE,
+    FOREIGN KEY (level_id) REFERENCES levels(id) ON DELETE CASCADE,
     UNIQUE KEY unique_level_slot (level_id, slot_number)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -55,10 +55,17 @@ CREATE TABLE registrations (
     school_origin VARCHAR(150) NULL,
     attendance_session VARCHAR(100) NOT NULL,
     payment_method ENUM('pay_now', 'pay_onsite') NOT NULL DEFAULT 'pay_now',
-    payment_proof LONGTEXT NULL, -- Base64 / Image Data
+    payment_proof VARCHAR(500) NULL, -- File URL on server (uploads/ directory)
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE KEY unique_child_registration (child_name, birth_date)
+    UNIQUE KEY unique_child_registration (child_name, birth_date),
+    INDEX idx_level_id (level_id),
+    INDEX idx_created_at (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Additional Performance Indexes
+CREATE INDEX IF NOT EXISTS idx_slots_level_status ON slots(level_id, status);
+CREATE INDEX IF NOT EXISTS idx_levels_category ON levels(category);
+
 
 -- Default Admin User
 INSERT INTO admins (username, password, name) VALUES ('admin', 'admin123', 'Administrator Edelweiss');

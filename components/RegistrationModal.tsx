@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { LevelQuota, RegistrationFormData, SavedParentSession } from '@/types/registration';
 import { X, CheckCircle, User, Phone, Mail, GraduationCap, Calendar, Ticket, UserPlus, AlertCircle, ArrowRightLeft, Upload, ShieldCheck, CreditCard, Clock } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { API_BASE_URL } from '@/lib/api-config';
 
 interface RegistrationModalProps {
   level: LevelQuota;
@@ -22,9 +23,10 @@ export default function RegistrationModal({
   savedParentSession,
   onClose,
   onSuccess,
-  apiBaseUrl = '/api.php'
+  apiBaseUrl = API_BASE_URL
 }: RegistrationModalProps) {
   const [loading, setLoading] = useState(false);
+  const [uploadingFile, setUploadingFile] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [submittedData, setSubmittedData] = useState<{ ticketCode: string } | null>(null);
   const [paymentProofFileName, setPaymentProofFileName] = useState<string | null>(null);
@@ -62,19 +64,67 @@ export default function RegistrationModal({
     });
   };
 
+  // Fast Client-Side Image Compression & Reader
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      setPaymentProofFileName(file.name);
-      const reader = new FileReader();
-      reader.onloadend = () => {
+    if (!file) return;
+
+    if (file.size > 10 * 1024 * 1024) {
+      setErrorMessage('Ukuran file terlalu besar. Maksimal 10MB.');
+      return;
+    }
+
+    setPaymentProofFileName(file.name);
+    setUploadingFile(true);
+    setErrorMessage(null);
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        // Compress image using canvas for ultra-fast payload transfer
+        const canvas = document.createElement('canvas');
+        const MAX_WIDTH = 1200;
+        const MAX_HEIGHT = 1200;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > MAX_WIDTH) {
+            height *= MAX_WIDTH / width;
+            width = MAX_WIDTH;
+          }
+        } else {
+          if (height > MAX_HEIGHT) {
+            width *= MAX_HEIGHT / height;
+            height = MAX_HEIGHT;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx?.drawImage(img, 0, 0, width, height);
+
+        const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7); // 70% quality compression
         setFormData((prev) => ({
           ...prev,
-          payment_proof: reader.result as string
+          payment_proof: compressedBase64
         }));
+        setUploadingFile(false);
       };
-      reader.readAsDataURL(file);
-    }
+
+      img.onerror = () => {
+        setFormData((prev) => ({
+          ...prev,
+          payment_proof: event.target?.result as string
+        }));
+        setUploadingFile(false);
+      };
+
+      img.src = event.target?.result as string;
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -523,11 +573,17 @@ export default function RegistrationModal({
                       type="file"
                       accept="image/*,.pdf"
                       onChange={handleFileUpload}
-                      className="w-full text-xs text-slate-600 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-[#293C88] file:text-white hover:file:bg-[#1d2c68] cursor-pointer"
+                      disabled={uploadingFile}
+                      className="w-full text-xs text-slate-600 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-[#293C88] file:text-white hover:file:bg-[#1d2c68] cursor-pointer disabled:opacity-50"
                     />
-                    {paymentProofFileName && (
+                    {uploadingFile && (
+                      <span className="text-[11px] text-blue-600 font-bold block mt-1 animate-pulse">
+                        ⏳ Mengupload file ke server...
+                      </span>
+                    )}
+                    {!uploadingFile && paymentProofFileName && formData.payment_proof && (
                       <span className="text-[11px] text-emerald-700 font-bold block mt-1">
-                        ✓ File terpilih: {paymentProofFileName}
+                        ✓ File berhasil diupload: {paymentProofFileName}
                       </span>
                     )}
                   </div>
