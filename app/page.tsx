@@ -1,626 +1,200 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { LevelQuota, SavedParentSession } from '@/types/registration';
-import RegistrationModal from '@/components/RegistrationModal';
-import { School, Home, ArrowRightLeft, Database, RefreshCw, Zap, CheckCircle2, ChevronRight, Users, Sparkles, ShieldCheck } from 'lucide-react';
+import { useState } from 'react';
 import Link from 'next/link';
-import { API_BASE_URL } from '@/lib/api-config';
+import { 
+  School, 
+  Calendar, 
+  ExternalLink, 
+  ChevronRight, 
+  Sparkles, 
+  ShieldCheck, 
+  MapPin, 
+  Clock, 
+  Info,
+  ArrowRight,
+  BookOpen,
+  Building2,
+  ChevronDown,
+  ChevronUp
+} from 'lucide-react';
 
-const INITIAL_MOCK_LEVELS: LevelQuota[] = [
-  // 1. EDELWEISS FORMAL SCHOOL (Preschool + P1 + S1)
-  {
-    id: 'fs-kiddy1',
-    code: 'Kiddy 1',
-    name: 'Edelweiss Formal School - Kiddy 1 (Preschool)',
-    category: 'formal',
-    quota: 20,
-    booked: 3,
-    available: 17,
-    slots: Array.from({ length: 20 }, (_, i) => ({
-      number: i + 1,
-      status: [1, 4, 8].includes(i + 1) ? 'booked' : 'available',
-      holder: [1, 4, 8].includes(i + 1) ? 'Siswa Terdaftar' : null
-    }))
-  },
-  {
-    id: 'fs-kiddy2',
-    code: 'Kiddy 2',
-    name: 'Edelweiss Formal School - Kiddy 2 (Preschool)',
-    category: 'formal',
-    quota: 25,
-    booked: 4,
-    available: 21,
-    slots: Array.from({ length: 25 }, (_, i) => ({
-      number: i + 1,
-      status: [2, 5, 9, 12].includes(i + 1) ? 'booked' : 'available',
-      holder: [2, 5, 9, 12].includes(i + 1) ? 'Siswa Terdaftar' : null
-    }))
-  },
-  {
-    id: 'fs-k1',
-    code: 'K1',
-    name: 'Edelweiss Formal School - K1 / TK A (Preschool)',
-    category: 'formal',
-    quota: 40,
-    booked: 6,
-    available: 34,
-    slots: Array.from({ length: 40 }, (_, i) => ({
-      number: i + 1,
-      status: [3, 4, 7, 10, 15, 18].includes(i + 1) ? 'booked' : 'available',
-      holder: [3, 4, 7, 10, 15, 18].includes(i + 1) ? 'Siswa Terdaftar' : null
-    }))
-  },
-  {
-    id: 'fs-k2',
-    code: 'K2',
-    name: 'Edelweiss Formal School - K2 / TK B (Preschool)',
-    category: 'formal',
-    quota: 40,
-    booked: 5,
-    available: 35,
-    slots: Array.from({ length: 40 }, (_, i) => ({
-      number: i + 1,
-      status: [1, 6, 11, 14, 20].includes(i + 1) ? 'booked' : 'available',
-      holder: [1, 6, 11, 14, 20].includes(i + 1) ? 'Siswa Terdaftar' : null
-    }))
-  },
-  {
-    id: 'fs-p1',
-    code: 'Primary 1',
-    name: 'Edelweiss Formal School - Primary 1 (Kelas 1 SD)',
-    category: 'formal',
-    quota: 40,
-    booked: 8,
-    available: 32,
-    slots: Array.from({ length: 40 }, (_, i) => ({
-      number: i + 1,
-      status: [1, 2, 5, 8, 12, 15, 22, 25].includes(i + 1) ? 'booked' : 'available',
-      holder: [1, 2, 5, 8, 12, 15, 22, 25].includes(i + 1) ? 'Siswa Terdaftar' : null
-    }))
-  },
-  {
-    id: 'fs-s1',
-    code: 'Secondary 1',
-    name: 'Edelweiss Formal School - Secondary 1 (Kelas 7 SMP)',
-    category: 'formal',
-    quota: 30,
-    booked: 4,
-    available: 26,
-    slots: Array.from({ length: 30 }, (_, i) => ({
-      number: i + 1,
-      status: [2, 5, 9, 14].includes(i + 1) ? 'booked' : 'available',
-      holder: [2, 5, 9, 14].includes(i + 1) ? 'Siswa Terdaftar' : null
-    }))
-  },
+export default function LinktreeHomePage() {
+  const [showSchedule, setShowSchedule] = useState(false);
 
-  // 2. EDELWEISS ACADEMIA HOME SCHOOLING (Kuota @ 10 Anak)
-  {
-    id: 'hs-p1',
-    code: 'Primary 1 (HS)',
-    name: 'Edelweiss Academia Home Schooling - Primary 1',
-    category: 'homeschooling',
-    quota: 10,
-    booked: 2,
-    available: 8,
-    slots: Array.from({ length: 10 }, (_, i) => ({
-      number: i + 1,
-      status: [1, 3].includes(i + 1) ? 'booked' : 'available',
-      holder: [1, 3].includes(i + 1) ? 'Siswa Terdaftar' : null
-    }))
-  },
-  {
-    id: 'hs-ls1',
-    code: 'Lower Secondary 1',
-    name: 'Edelweiss Academia Home Schooling - Lower Secondary 1',
-    category: 'homeschooling',
-    quota: 10,
-    booked: 3,
-    available: 7,
-    slots: Array.from({ length: 10 }, (_, i) => ({
-      number: i + 1,
-      status: [2, 4, 7].includes(i + 1) ? 'booked' : 'available',
-      holder: [2, 4, 7].includes(i + 1) ? 'Siswa Terdaftar' : null
-    }))
-  },
-  {
-    id: 'hs-us1',
-    code: 'Upper Secondary 1',
-    name: 'Edelweiss Academia Home Schooling - Upper Secondary 1',
-    category: 'homeschooling',
-    quota: 10,
-    booked: 1,
-    available: 9,
-    slots: Array.from({ length: 10 }, (_, i) => ({
-      number: i + 1,
-      status: [5].includes(i + 1) ? 'booked' : 'available',
-      holder: [5].includes(i + 1) ? 'Siswa Terdaftar' : null
-    }))
-  },
-
-  // 3. EDELWEISS SISWA PINDAHAN (TRANSFER)
-  {
-    id: 'tr-ps-kiddy2',
-    code: 'Kiddy 2',
-    name: 'Siswa Pindahan Preschool - Kiddy 2',
-    category: 'transfer',
-    quota: 15,
-    booked: 2,
-    available: 13,
-    slots: Array.from({ length: 15 }, (_, i) => ({
-      number: i + 1,
-      status: [1, 5].includes(i + 1) ? 'booked' : 'available',
-      holder: [1, 5].includes(i + 1) ? 'Siswa Pindahan' : null
-    }))
-  },
-  {
-    id: 'tr-ps-k2',
-    code: 'K2',
-    name: 'Siswa Pindahan Preschool - K2',
-    category: 'transfer',
-    quota: 15,
-    booked: 1,
-    available: 14,
-    slots: Array.from({ length: 15 }, (_, i) => ({
-      number: i + 1,
-      status: [3].includes(i + 1) ? 'booked' : 'available',
-      holder: [3].includes(i + 1) ? 'Siswa Pindahan' : null
-    }))
-  },
-  {
-    id: 'tr-p2',
-    code: 'Primary 2',
-    name: 'Siswa Pindahan Primary - Primary 2',
-    category: 'transfer',
-    quota: 20,
-    booked: 4,
-    available: 16,
-    slots: Array.from({ length: 20 }, (_, i) => ({
-      number: i + 1,
-      status: [2, 4, 7, 10].includes(i + 1) ? 'booked' : 'available',
-      holder: [2, 4, 7, 10].includes(i + 1) ? 'Siswa Pindahan' : null
-    }))
-  },
-  {
-    id: 'tr-p3',
-    code: 'Primary 3',
-    name: 'Siswa Pindahan Primary - Primary 3',
-    category: 'transfer',
-    quota: 20,
-    booked: 2,
-    available: 18,
-    slots: Array.from({ length: 20 }, (_, i) => ({
-      number: i + 1,
-      status: [1, 8].includes(i + 1) ? 'booked' : 'available',
-      holder: [1, 8].includes(i + 1) ? 'Siswa Pindahan' : null
-    }))
-  },
-  {
-    id: 'tr-p4',
-    code: 'Primary 4',
-    name: 'Siswa Pindahan Primary - Primary 4',
-    category: 'transfer',
-    quota: 20,
-    booked: 3,
-    available: 17,
-    slots: Array.from({ length: 20 }, (_, i) => ({
-      number: i + 1,
-      status: [3, 6, 9].includes(i + 1) ? 'booked' : 'available',
-      holder: [3, 6, 9].includes(i + 1) ? 'Siswa Pindahan' : null
-    }))
-  },
-  {
-    id: 'tr-p5',
-    code: 'Primary 5',
-    name: 'Siswa Pindahan Primary - Primary 5',
-    category: 'transfer',
-    quota: 20,
-    booked: 1,
-    available: 19,
-    slots: Array.from({ length: 20 }, (_, i) => ({
-      number: i + 1,
-      status: [4].includes(i + 1) ? 'booked' : 'available',
-      holder: [4].includes(i + 1) ? 'Siswa Pindahan' : null
-    }))
-  },
-  {
-    id: 'tr-p6',
-    code: 'Primary 6',
-    name: 'Siswa Pindahan Primary - Primary 6',
-    category: 'transfer',
-    quota: 20,
-    booked: 2,
-    available: 18,
-    slots: Array.from({ length: 20 }, (_, i) => ({
-      number: i + 1,
-      status: [2, 11].includes(i + 1) ? 'booked' : 'available',
-      holder: [2, 11].includes(i + 1) ? 'Siswa Pindahan' : null
-    }))
-  },
-  {
-    id: 'tr-s1',
-    code: 'Secondary 1',
-    name: 'Siswa Pindahan Secondary - Secondary 1',
-    category: 'transfer',
-    quota: 15,
-    booked: 2,
-    available: 13,
-    slots: Array.from({ length: 15 }, (_, i) => ({
-      number: i + 1,
-      status: [3, 7].includes(i + 1) ? 'booked' : 'available',
-      holder: [3, 7].includes(i + 1) ? 'Siswa Pindahan' : null
-    }))
-  },
-  {
-    id: 'tr-s2',
-    code: 'Secondary 2',
-    name: 'Siswa Pindahan Secondary - Secondary 2',
-    category: 'transfer',
-    quota: 15,
-    booked: 1,
-    available: 14,
-    slots: Array.from({ length: 15 }, (_, i) => ({
-      number: i + 1,
-      status: [5].includes(i + 1) ? 'booked' : 'available',
-      holder: [5].includes(i + 1) ? 'Siswa Pindahan' : null
-    }))
-  },
-  {
-    id: 'tr-s3',
-    code: 'Secondary 3',
-    name: 'Siswa Pindahan Secondary - Secondary 3',
-    category: 'transfer',
-    quota: 15,
-    booked: 1,
-    available: 14,
-    slots: Array.from({ length: 15 }, (_, i) => ({
-      number: i + 1,
-      status: [8].includes(i + 1) ? 'booked' : 'available',
-      holder: [8].includes(i + 1) ? 'Siswa Pindahan' : null
-    }))
-  }
-];
-
-export default function OpenHousePage() {
-  const [levels, setLevels] = useState<LevelQuota[]>(INITIAL_MOCK_LEVELS);
-  
-  const [selectedCategory, setSelectedCategory] = useState<'formal' | 'homeschooling' | 'transfer'>('formal');
-  const [selectedLevelId, setSelectedLevelId] = useState<string | null>(null);
-  const [selectedSlot, setSelectedSlot] = useState<{ levelId: string; slotNumber: number } | null>(null);
-  
-  const [parentSession, setParentSession] = useState<SavedParentSession | null>(null);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const [isOnlineBackend, setIsOnlineBackend] = useState<boolean>(false);
-
-  const fetchQuotaData = async () => {
-    setIsRefreshing(true);
-    try {
-      const res = await fetch(`${API_BASE_URL}?action=get_data`);
-      if (res.ok) {
-        const json = await res.json();
-        if (json.status === 'success' && Array.isArray(json.data) && json.data.length > 0) {
-          setLevels(json.data);
-          setIsOnlineBackend(true);
-        }
-      }
-    } catch (err) {
-      console.log('Backend fallback to client state');
-    } finally {
-      setIsRefreshing(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchQuotaData();
-  }, []);
-
-  const availableClassesInCategory = levels.filter(
-    (lvl) => lvl.category === selectedCategory
-  );
-
-  const activeLevelObj = selectedLevelId
-    ? levels.find((l) => l.id === selectedLevelId)
-    : null;
-
-  const handleCategorySelect = (category: 'formal' | 'homeschooling' | 'transfer') => {
-    setSelectedCategory(category);
-    setSelectedLevelId(null);
-  };
-
-  const handleClassClickToRegister = (level: LevelQuota) => {
-    const availableSlot = level.slots.find((s) => s.status === 'available');
-    const slotNumberToUse = availableSlot ? availableSlot.number : 0; // 0 indicates Waiting List
-
-    setSelectedLevelId(level.id);
-    setSelectedSlot({ levelId: level.id, slotNumber: slotNumberToUse });
-  };
-
-  const handleRegistrationSuccess = (updatedParentSession: SavedParentSession) => {
-    setParentSession(updatedParentSession);
-
-    if (selectedSlot) {
-      setLevels((prev) =>
-        prev.map((lvl) => {
-          if (lvl.id === selectedSlot.levelId) {
-            if (selectedSlot.slotNumber === 0) {
-              return {
-                ...lvl,
-                waitingList: (lvl.waitingList || 0) + 1
-              };
-            }
-            const updatedSlots = lvl.slots.map((s) =>
-              s.number === selectedSlot.slotNumber
-                ? { ...s, status: 'booked' as const, holder: 'Baru Terdaftar' }
-                : s
-            );
-            const bookedCount = updatedSlots.filter((s) => s.status === 'booked').length;
-            return {
-              ...lvl,
-              booked: bookedCount,
-              available: lvl.quota - bookedCount,
-              slots: updatedSlots
-            };
-          }
-          return lvl;
-        })
-      );
-    }
-  };
+  const PRA_OPENHOUSE_FORM_URL = 'https://forms.cloud.microsoft/r/qhcqbW8f3P';
 
   return (
-    <main className="min-h-screen bg-[#F8FAFC] text-[#293C88] font-poppins selection:bg-[#FED700] selection:text-[#293C88] pb-16">
+    <div className="min-h-screen bg-slate-50 text-slate-800 font-poppins flex flex-col justify-between selection:bg-[#FED700] selection:text-[#002B5B]">
       
-      {/* Top Banner Status App & Admin Access Button */}
-      <div className="bg-[#002B5B] text-white text-xs py-2.5 px-4 border-b border-blue-900/60 sticky top-0 z-40">
-        <div className="max-w-5xl mx-auto flex items-center justify-between font-inter">
-          <div className="flex items-center gap-2">
-            <span className="bg-[#FED700] text-[#293C88] px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase flex items-center gap-1">
-              <Zap className="w-3 h-3" /> Cloudflare Ready
-            </span>
-            <span className="text-slate-200 hidden sm:inline">Pendaftaran Edelweiss Open House</span>
-          </div>
+      {/* Top Subtle Decoration Accent Line */}
+      <div className="h-1.5 w-full bg-gradient-to-r from-[#002B5B] via-[#293C88] to-[#FED700]" />
 
-          <div className="flex items-center gap-3">
-            <div className="text-[11px] text-blue-200 hidden md:flex items-center gap-1">
-              <Database className="w-3.5 h-3.5 text-amber-400" />
-              <span>Status DB: <strong>{isOnlineBackend ? 'Terhubung (phpMyAdmin Live)' : 'Demo Mode'}</strong></span>
-            </div>
-
-            <button
-              onClick={fetchQuotaData}
-              disabled={isRefreshing}
-              className="bg-white/10 hover:bg-white/20 text-white px-2 py-1 rounded transition text-[11px] flex items-center gap-1"
-            >
-              <RefreshCw className={`w-3 h-3 ${isRefreshing ? 'animate-spin' : ''}`} /> Refresh
-            </button>
-
-            {/* TOMBOL AKSES KE HALAMAN ADMIN */}
-            <Link
-              href="/admin/login"
-              className="bg-[#FED700] hover:bg-[#e5c200] text-[#293C88] px-3 py-1.5 rounded-lg font-extrabold text-[11px] transition shadow-sm flex items-center gap-1.5"
-            >
-              <ShieldCheck className="w-4 h-4" /> Admin Panel
-            </Link>
-          </div>
-        </div>
-      </div>
-
-      {/* Header Utama Banner */}
-      <section className="bg-gradient-to-r from-[#293C88] to-[#002B5B] text-white py-10 px-4 shadow-md">
-        <div className="max-w-4xl mx-auto text-center">
-          <div className="inline-flex items-center gap-1.5 bg-white/10 px-3.5 py-1 rounded-full text-xs font-medium text-[#FED700] mb-3">
-            <Sparkles className="w-4 h-4" /> Sistem Pendaftaran Edelweiss Open House
-          </div>
-          <h1 className="text-2xl sm:text-4xl font-extrabold font-poppins text-white tracking-tight mb-3">
-            Pendaftaran Open House Edelweiss
-          </h1>
-          <p className="text-xs sm:text-sm text-blue-100 max-w-xl mx-auto font-inter">
-            Pilih program pendidikan &amp; klik kelas di bawah ini untuk langsung melakukan pendaftaran calon siswa.
-          </p>
-        </div>
-      </section>
-
-      {/* Section Utama Alur Pemilihan 2 Langkah */}
-      <section className="max-w-4xl mx-auto px-4 -mt-5 relative z-20 space-y-6">
+      {/* Main Container */}
+      <main className="w-full max-w-lg mx-auto px-4 py-8 sm:py-12 space-y-6">
         
-        {/* LANGKAH 1: PILIH PROGRAM UTAMA */}
-        <div className="bg-white rounded-2xl p-5 shadow-lg border border-slate-200/80">
-          <div className="flex items-center gap-2 mb-3">
-            <div className="w-6 h-6 rounded-full bg-[#293C88] text-white font-bold text-xs flex items-center justify-center">
-              1
-            </div>
-            <h2 className="text-base font-bold text-[#002B5B]">
-              Langkah 1: Pilih Program / Jalur Pendaftaran
-            </h2>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            {/* Opsi 1: Edelweiss Formal School */}
-            <button
-              onClick={() => handleCategorySelect('formal')}
-              className={`p-4 rounded-xl border-2 text-left transition-all flex flex-col justify-between ${
-                selectedCategory === 'formal'
-                  ? 'border-[#293C88] bg-blue-50/60 shadow-sm'
-                  : 'border-slate-200 hover:border-slate-300 bg-white'
-              }`}
-            >
-              <div className="flex items-center gap-3 mb-2">
-                <div className={`p-2.5 rounded-xl ${selectedCategory === 'formal' ? 'bg-[#293C88] text-white' : 'bg-slate-100 text-slate-600'}`}>
-                  <School className="w-5 h-5" />
-                </div>
-                <div>
-                  <div className="font-bold text-sm text-[#002B5B]">Edelweiss Formal School</div>
-                  <div className="text-[11px] text-slate-500">Preschool, Primary 1, Secondary 1</div>
-                </div>
-              </div>
-              <div className="text-[11px] font-semibold text-[#293C88] flex items-center justify-between pt-2 border-t border-slate-100">
-                <span>Gedung Sekolah Utama</span>
-                <ChevronRight className="w-4 h-4" />
-              </div>
-            </button>
-
-            {/* Opsi 2: Edelweiss Academia Home Schooling */}
-            <button
-              onClick={() => handleCategorySelect('homeschooling')}
-              className={`p-4 rounded-xl border-2 text-left transition-all flex flex-col justify-between ${
-                selectedCategory === 'homeschooling'
-                  ? 'border-[#293C88] bg-blue-50/60 shadow-sm'
-                  : 'border-slate-200 hover:border-slate-300 bg-white'
-              }`}
-            >
-              <div className="flex items-center gap-3 mb-2">
-                <div className={`p-2.5 rounded-xl ${selectedCategory === 'homeschooling' ? 'bg-[#293C88] text-white' : 'bg-slate-100 text-slate-600'}`}>
-                  <Home className="w-5 h-5" />
-                </div>
-                <div>
-                  <div className="font-bold text-sm text-[#002B5B]">Edelweiss Academia</div>
-                  <div className="text-[11px] text-slate-500">Home Schooling (Kuota @ 10)</div>
-                </div>
-              </div>
-              <div className="text-[11px] font-semibold text-[#293C88] flex items-center justify-between pt-2 border-t border-slate-100">
-                <span>Primary 1, Lower &amp; Upper Sec 1</span>
-                <ChevronRight className="w-4 h-4" />
-              </div>
-            </button>
-
-            {/* Opsi 3: Menu Siswa Pindahan */}
-            <button
-              onClick={() => handleCategorySelect('transfer')}
-              className={`p-4 rounded-xl border-2 text-left transition-all flex flex-col justify-between ${
-                selectedCategory === 'transfer'
-                  ? 'border-amber-500 bg-amber-50/80 shadow-sm'
-                  : 'border-slate-200 hover:border-slate-300 bg-white'
-              }`}
-            >
-              <div className="flex items-center gap-3 mb-2">
-                <div className={`p-2.5 rounded-xl ${selectedCategory === 'transfer' ? 'bg-amber-600 text-white' : 'bg-amber-100 text-amber-700'}`}>
-                  <ArrowRightLeft className="w-5 h-5" />
-                </div>
-                <div>
-                  <div className="font-bold text-sm text-amber-900">Siswa Pindahan</div>
-                  <div className="text-[11px] text-amber-700">Lanjutan Sekolah Asal</div>
-                </div>
-              </div>
-              <div className="text-[11px] font-semibold text-amber-800 flex items-center justify-between pt-2 border-t border-amber-100">
-                <span>Preschool, Primary 2-6, Sec 1-3</span>
-                <ChevronRight className="w-4 h-4" />
-              </div>
-            </button>
-          </div>
-        </div>
-
-        {/* LANGKAH 2: KLIK KELAS DAFAR LANGSUNG */}
-        <div className="bg-white rounded-2xl p-5 shadow-lg border border-slate-200/80">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <div className="w-6 h-6 rounded-full bg-[#293C88] text-white font-bold text-xs flex items-center justify-center">
-                2
-              </div>
-              <h2 className="text-base font-bold text-[#002B5B]">
-                Langkah 2: Klik Kelas Untuk Langsung mendaftar (
-                {selectedCategory === 'formal' && 'Edelweiss Formal School'}
-                {selectedCategory === 'homeschooling' && 'Academia Home Schooling'}
-                {selectedCategory === 'transfer' && 'Menu Siswa Pindahan'}
-                )
-              </h2>
+        {/* Header / Brand Profile Section */}
+        <div className="text-center space-y-3">
+          <div className="inline-block relative">
+            <div className="w-20 h-20 sm:w-24 sm:h-24 bg-[#002B5B] text-[#FED700] rounded-full p-4 shadow-md flex items-center justify-center mx-auto border-4 border-white">
+              <School className="w-10 h-10 sm:w-12 sm:h-12" />
             </div>
           </div>
 
-          <p className="text-xs text-slate-500 mb-4 font-medium">
-            👇 Silakan **klik pada salah satu kotak kelas** di bawah ini yang masih memiliki sisa kuota untuk membuka form registrasi data diri calon siswa:
-          </p>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-            {availableClassesInCategory.map((lvl) => {
-              const isFull = lvl.available <= 0;
-              const wlCount = lvl.waitingList || 0;
-              return (
-                <button
-                  key={lvl.id}
-                  onClick={() => handleClassClickToRegister(lvl)}
-                  className={`p-4 rounded-2xl border-2 text-left transition-all relative group flex flex-col justify-between ${
-                    isFull
-                      ? 'border-amber-300 bg-amber-50/70 hover:bg-amber-100/80 shadow-xs hover:shadow-md hover:-translate-y-0.5'
-                      : (selectedCategory === 'transfer'
-                          ? 'border-amber-200 hover:border-amber-500 bg-amber-50/40 hover:bg-amber-50 shadow-xs hover:shadow-md hover:-translate-y-0.5'
-                          : 'border-blue-100 hover:border-[#293C88] bg-slate-50/70 hover:bg-blue-50/60 shadow-xs hover:shadow-md hover:-translate-y-0.5')
-                  }`}
-                >
-                  <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs font-bold uppercase tracking-wider text-[#293C88]">
-                        Kelas {lvl.code}
-                      </span>
-                      {isFull ? (
-                        <span className="bg-amber-500 text-white text-[10px] font-extrabold px-2 py-0.5 rounded-full uppercase flex items-center gap-1">
-                          Waiting List
-                        </span>
-                      ) : (
-                        <span className="bg-[#FED700] text-[#293C88] text-[10px] font-extrabold px-2 py-0.5 rounded-full uppercase">
-                          Daftar &rarr;
-                        </span>
-                      )}
-                    </div>
-
-                    <div className="text-sm font-bold text-[#002B5B] line-clamp-1">
-                      {lvl.name}
-                    </div>
-                  </div>
-
-                  <div className="mt-4 pt-2 border-t border-slate-200/60 flex items-center justify-between">
-                    <span className="text-xs text-slate-500">
-                      {isFull ? 'Waiting List:' : 'Sisa Kuota:'}
-                    </span>
-                    {isFull ? (
-                      <span className="text-xs font-extrabold text-amber-700 bg-amber-200/80 px-2 py-0.5 rounded-lg border border-amber-300">
-                        {wlCount > 0 ? `${wlCount} Orang Antri` : 'Daftar Waiting List'}
-                      </span>
-                    ) : (
-                      <span className="text-sm font-extrabold text-emerald-600">
-                        {lvl.available} / {lvl.quota} Kursi
-                      </span>
-                    )}
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Multi-Child Session Info */}
-        {parentSession && parentSession.registeredChildren.length > 0 && (
-          <div className="bg-emerald-50 border border-emerald-200 p-4 rounded-2xl flex items-center justify-between text-xs text-emerald-900 shadow-sm">
-            <div className="flex items-center gap-2.5">
-              <Users className="w-5 h-5 text-emerald-700 flex-shrink-0" />
-              <div>
-                <strong>Histori Orang Tua:</strong> {parentSession.parent_name} ({parentSession.whatsapp})
-                <div className="text-[11px] text-emerald-700">
-                  Sudah mendaftarkan: {parentSession.registeredChildren.join(', ')}
-                </div>
-              </div>
-            </div>
-            <span className="bg-emerald-200 text-emerald-900 px-2.5 py-1 rounded-full text-[10px] font-bold">
-              Multi-Child Session
+          <div>
+            <span className="inline-flex items-center gap-1 bg-blue-50 text-[#293C88] px-3 py-1 rounded-full text-[11px] font-bold border border-blue-100 mb-2">
+              <Sparkles className="w-3.5 h-3.5 text-[#293C88]" /> Portal Pendaftaran Resmi
             </span>
-          </div>
-        )}
-      </section>
 
-      {/* Modal Pendaftaran Data Diri */}
-      {selectedSlot && activeLevelObj && (
-        <RegistrationModal
-          level={activeLevelObj}
-          slotNumber={selectedSlot.slotNumber}
-          isTransferMenu={selectedCategory === 'transfer'}
-          savedParentSession={parentSession}
-          onClose={() => {
-            setSelectedSlot(null);
-            setSelectedLevelId(null);
-          }}
-          onSuccess={handleRegistrationSuccess}
-          apiBaseUrl={API_BASE_URL}
-        />
-      )}
-    </main>
+            <h1 className="text-xl sm:text-2xl font-extrabold text-[#002B5B] tracking-tight font-poppins">
+              Edelweiss Learning Center
+            </h1>
+
+            <p className="text-xs text-slate-500 font-inter max-w-xs mx-auto mt-1 leading-relaxed">
+              Silakan pilih jalur pendaftaran di bawah ini:
+            </p>
+          </div>
+        </div>
+
+        {/* LINKTREE CARDS SECTION */}
+        <div className="space-y-4">
+          
+          {/* CARD 1: DAFTAR PRA OPEN HOUSE (SCHOOL TOUR) */}
+          <div className="bg-white rounded-2xl p-5 border border-slate-200/90 shadow-xs hover:shadow-md transition-all space-y-4">
+            
+            <div className="flex items-start justify-between gap-3">
+              <div className="space-y-1">
+                <span className="inline-flex items-center gap-1 bg-amber-100 text-amber-800 font-bold text-[10px] uppercase px-2.5 py-0.5 rounded-full">
+                  <Calendar className="w-3 h-3 text-amber-600" /> 1. PRA OPEN HOUSE
+                </span>
+                <h2 className="text-base font-extrabold text-[#002B5B]">
+                  Pendaftaran Pra Open House
+                </h2>
+              </div>
+
+              <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 border border-amber-100">
+                <BookOpen className="w-5 h-5" />
+              </div>
+            </div>
+
+            <p className="text-xs text-slate-600 font-inter leading-relaxed">
+              Ikuti <strong>School Tour</strong> &amp; pengenalan fasilitas lingkungan belajar Edelweiss sebelum Open House Utama.
+            </p>
+
+            {/* Tombol Aksi Utama Pra Open House */}
+            <div className="space-y-2">
+              <a
+                href={PRA_OPENHOUSE_FORM_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full bg-[#FED700] hover:bg-[#e5c200] text-[#002B5B] font-extrabold py-3 px-4 rounded-xl text-xs transition flex items-center justify-center gap-2 shadow-xs cursor-pointer text-center"
+              >
+                <span>Daftar Pra Open House (School Tour)</span>
+                <ExternalLink className="w-3.5 h-3.5 text-[#002B5B]" />
+              </a>
+
+              {/* Toggle Ringkasan Jadwal */}
+              <button
+                onClick={() => setShowSchedule(!showSchedule)}
+                className="w-full bg-slate-100 hover:bg-slate-200/80 text-slate-700 font-bold py-2 px-3 rounded-xl text-[11px] transition flex items-center justify-center gap-1"
+              >
+                <span>{showSchedule ? 'Sembunyikan Jadwal' : 'Lihat Jadwal School Tour'}</span>
+                {showSchedule ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+              </button>
+            </div>
+
+            {/* Expander Jadwal Clean */}
+            {showSchedule && (
+              <div className="bg-amber-50/70 p-3.5 rounded-xl border border-amber-200/80 text-xs space-y-3 text-amber-950 font-inter animate-fadeIn">
+                <div className="font-bold text-[#002B5B] border-b border-amber-200/60 pb-1.5 flex items-center justify-between">
+                  <span>Jadwal Pra Open House - School Tour</span>
+                  <span className="text-[10px] text-amber-800 font-normal">Agustus 2026</span>
+                </div>
+
+                {/* Weekday */}
+                <div className="space-y-1">
+                  <strong className="block text-[#002B5B]">1. Weekday (Senin - Jumat)</strong>
+                  <p className="text-[11px] text-slate-600">📅 Tanggal: 3 - 7 Agt &amp; 10 - 14 Agt 2026</p>
+                  <ul className="text-[11px] text-slate-700 pl-3 list-disc space-y-0.5 mt-1">
+                    <li>Kiddy &amp; Kindergarten: 13.00 - 16.00 WIB</li>
+                    <li>SD (Primary): 15.00 - 17.00 WIB</li>
+                    <li>SMP (Secondary): 15.00 - 17.00 WIB</li>
+                  </ul>
+                </div>
+
+                {/* Weekend */}
+                <div className="space-y-1 pt-1 border-t border-amber-200/60">
+                  <strong className="block text-[#002B5B]">2. Weekend (Sabtu)</strong>
+                  <p className="text-[11px] text-slate-600">📅 Tanggal: 8 Agustus 2026</p>
+                  <p className="text-[11px] text-slate-700">Pukul (Semua Jenjang): 09.00 - 16.00 WIB</p>
+                </div>
+
+                {/* Lokasi */}
+                <div className="pt-1 border-t border-amber-200/60 text-[11px]">
+                  <strong className="text-[#002B5B] flex items-center gap-1">
+                    <MapPin className="w-3.5 h-3.5 text-amber-600" /> Lokasi:
+                  </strong>
+                  <span className="text-slate-700 block mt-0.5">Edelweiss Jatibening Estate &amp; Edelweiss Ratna</span>
+                </div>
+              </div>
+            )}
+
+          </div>
+
+
+          {/* CARD 2: DAFTAR OPEN HOUSE UTAMA */}
+          <div className="bg-white rounded-2xl p-5 border border-slate-200/90 shadow-xs hover:shadow-md transition-all space-y-4">
+            
+            <div className="flex items-start justify-between gap-3">
+              <div className="space-y-1">
+                <span className="inline-flex items-center gap-1 bg-blue-100 text-[#293C88] font-bold text-[10px] uppercase px-2.5 py-0.5 rounded-full">
+                  <Building2 className="w-3 h-3 text-[#293C88]" /> 2. OPEN HOUSE UTAMA
+                </span>
+                <h2 className="text-base font-extrabold text-[#002B5B]">
+                  Pendaftaran Open House Utama
+                </h2>
+              </div>
+
+              <div className="w-10 h-10 rounded-xl bg-blue-50 text-[#293C88] flex items-center justify-center shrink-0 border border-blue-100">
+                <Building2 className="w-5 h-5" />
+              </div>
+            </div>
+
+            <p className="text-xs text-slate-600 font-inter leading-relaxed">
+              Pilih program sekolah (Formal, Home Schooling, Pindahan), booking nomor kursi kuota, dan dapatkan <strong>E-Tiket Resmi</strong>.
+            </p>
+
+            {/* Tombol Aksi Utama Open House */}
+            <Link
+              href="/openhouse"
+              className="w-full bg-[#002B5B] hover:bg-[#293C88] text-white font-extrabold py-3 px-4 rounded-xl text-xs transition flex items-center justify-center gap-2 shadow-xs cursor-pointer text-center"
+            >
+              <span>Masuk Pendaftaran Open House</span>
+              <ArrowRight className="w-3.5 h-3.5 text-[#FED700]" />
+            </Link>
+
+          </div>
+
+        </div>
+
+        {/* Footer Admin Link */}
+        <div className="text-center pt-2">
+          <Link
+            href="/admin/login"
+            className="inline-flex items-center gap-1 text-xs text-slate-400 hover:text-[#002B5B] transition py-1 px-2 rounded-md"
+          >
+            <ShieldCheck className="w-3.5 h-3.5" />
+            <span>Login Panel Admin</span>
+          </Link>
+        </div>
+
+      </main>
+
+      {/* Clean Footer Copyright */}
+      <footer className="w-full text-center py-4 border-t border-slate-200 text-[11px] text-slate-400 font-inter">
+        &copy; 2026 Edelweiss Learning Center. All rights reserved.
+      </footer>
+
+    </div>
   );
 }
