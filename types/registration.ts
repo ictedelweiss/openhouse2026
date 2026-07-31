@@ -12,6 +12,7 @@ export interface LevelQuota {
   quota: number;
   booked: number;
   available: number;
+  waitingList?: number;
   slots: Slot[];
 }
 

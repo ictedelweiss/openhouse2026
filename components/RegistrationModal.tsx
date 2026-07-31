@@ -222,7 +222,7 @@ export default function RegistrationModal({
       <div className="bg-white rounded-3xl max-w-2xl w-full shadow-2xl border border-slate-100 overflow-hidden relative">
         
         {/* Header Modal */}
-        <div className={`p-6 text-white relative ${isTransferMenu ? 'bg-gradient-to-r from-amber-600 to-amber-800' : 'bg-[#293C88]'}`}>
+        <div className={`p-6 text-white relative ${slotNumber === 0 ? 'bg-gradient-to-r from-amber-600 to-amber-700' : (isTransferMenu ? 'bg-gradient-to-r from-amber-600 to-amber-800' : 'bg-[#293C88]')}`}>
           <button
             onClick={onClose}
             className="absolute top-5 right-5 text-white/80 hover:text-white bg-white/10 hover:bg-white/20 p-2 rounded-full transition"
@@ -232,13 +232,14 @@ export default function RegistrationModal({
           
           <div className="flex items-center gap-2 mb-1">
             <span className="bg-[#FED700] text-[#293C88] text-[11px] font-extrabold uppercase px-2.5 py-0.5 rounded-full flex items-center gap-1">
-              {isTransferMenu && <ArrowRightLeft className="w-3 h-3" />}
-              {isTransferMenu ? 'JALUR PINDAHAN' : 'SISWA BARU'}
+              {slotNumber === 0 ? 'WAITING LIST' : (isTransferMenu ? 'JALUR PINDAHAN' : 'SISWA BARU')}
             </span>
-            <span className="text-xs text-white/90">Sisa Kuota: <strong>{level.available} Kursi</strong></span>
+            <span className="text-xs text-white/90">
+              {slotNumber === 0 ? <strong className="text-amber-200">Kuota Penuh — Pendaftaran Antrean</strong> : <>Sisa Kuota: <strong>{level.available} Kursi</strong></>}
+            </span>
           </div>
           <h2 className="text-xl sm:text-2xl font-bold font-poppins text-white">
-            Form Pendaftaran {level.code}
+            {slotNumber === 0 ? `Pendaftaran Waiting List - ${level.code}` : `Form Pendaftaran ${level.code}`}
           </h2>
           <p className="text-xs text-white/90 mt-1">
             Program: <strong className="text-[#FED700]">{level.name}</strong>

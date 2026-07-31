@@ -451,13 +451,21 @@ export default function AdminDashboardPage() {
 
                       <td className="py-3.5 px-4">
                         <span className="font-bold text-[#002B5B] block">{item.level_code || item.level_name}</span>
-                        <span className={`inline-block text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full mt-0.5 ${
-                          item.registration_type === 'transfer' 
-                            ? 'bg-amber-100 text-amber-800' 
-                            : 'bg-emerald-100 text-emerald-800'
-                        }`}>
-                          {item.registration_type === 'transfer' ? 'Pindahan' : 'Siswa Baru'}
-                        </span>
+                        <div className="flex items-center gap-1 mt-0.5">
+                          {Number(item.slot_number) === 0 ? (
+                            <span className="inline-block text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-amber-500 text-white">
+                              Waiting List
+                            </span>
+                          ) : (
+                            <span className={`inline-block text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full ${
+                              item.registration_type === 'transfer' 
+                                ? 'bg-amber-100 text-amber-800' 
+                                : 'bg-emerald-100 text-emerald-800'
+                            }`}>
+                              {item.registration_type === 'transfer' ? 'Pindahan' : 'Siswa Baru'} (Kursi #{item.slot_number})
+                            </span>
+                          )}
+                        </div>
                       </td>
 
                       <td className="py-3.5 px-4">

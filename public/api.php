@@ -194,7 +194,8 @@ if ($action === 'get_data' && $_SERVER['REQUEST_METHOD'] === 'GET') {
     // Single JOIN query to eliminate N+1 query latency
     $query = "SELECT 
                 l.id, l.name, l.code, l.category, l.quota,
-                s.slot_number, s.status as slot_status, s.holder_name
+                s.slot_number, s.status as slot_status, s.holder_name,
+                (SELECT COUNT(*) FROM registrations r WHERE r.level_id = l.id AND r.slot_number = 0) as waiting_count
               FROM levels l
               LEFT JOIN slots s ON l.id = s.level_id
               ORDER BY l.category ASC, l.id ASC, s.slot_number ASC";
@@ -214,6 +215,7 @@ if ($action === 'get_data' && $_SERVER['REQUEST_METHOD'] === 'GET') {
                     'quota' => (int)$row['quota'],
                     'booked' => 0,
                     'available' => (int)$row['quota'],
+                    'waitingList' => (int)($row['waiting_count'] ?? 0),
                     'slots' => []
                 ];
             }
@@ -313,19 +315,22 @@ if ($action === 'register' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $attendance_session = isset($input['attendance_session']) ? $conn->real_escape_string($input['attendance_session']) : '';
     $payment_proof = isset($input['payment_proof']) ? $conn->real_escape_string($input['payment_proof']) : '';
 
-    if (empty($level_id) || $slot_number <= 0 || empty($child_name) || empty($birth_date) || empty($parent_name) || empty($whatsapp) || empty($email) || empty($attendance_session)) {
+    if (empty($level_id) || $slot_number < 0 || empty($child_name) || empty($birth_date) || empty($parent_name) || empty($whatsapp) || empty($email) || empty($attendance_session)) {
         echo json_encode(['status' => 'error', 'message' => 'Mohon lengkapi seluruh bidang data wajib termasuk Email aktif dan Sesi Kedatangan.']);
         exit();
     }
 
-    $prefix = ($registration_type === 'transfer') ? 'TRF' : 'NEW';
-    $ticket_code = 'ELC-' . $prefix . '-' . sprintf("%02d", $slot_number) . '-' . rand(100, 999);
+    $is_waiting_list = ($slot_number === 0);
+    $prefix = $is_waiting_list ? 'WAIT' : (($registration_type === 'transfer') ? 'TRF' : 'NEW');
+    $ticket_code = 'ELC-' . $prefix . '-' . ($is_waiting_list ? 'WL' : sprintf("%02d", $slot_number)) . '-' . rand(100, 999);
 
     $conn->begin_transaction();
     try {
-        $upd_stmt = $conn->prepare("UPDATE slots SET status = 'booked', holder_name = ? WHERE level_id = ? AND slot_number = ?");
-        $upd_stmt->bind_param("ssi", $child_name, $level_id, $slot_number);
-        $upd_stmt->execute();
+        if (!$is_waiting_list) {
+            $upd_stmt = $conn->prepare("UPDATE slots SET status = 'booked', holder_name = ? WHERE level_id = ? AND slot_number = ?");
+            $upd_stmt->bind_param("ssi", $child_name, $level_id, $slot_number);
+            $upd_stmt->execute();
+        }
 
         $ins_stmt = $conn->prepare("INSERT INTO registrations (ticket_code, level_id, slot_number, registration_type, child_name, birth_date, gender, parent_name, whatsapp, email, school_origin, attendance_session, payment_method, payment_proof) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
         $ins_stmt->bind_param("ssisssssssssss", $ticket_code, $level_id, $slot_number, $registration_type, $child_name, $birth_date, $gender, $parent_name, $whatsapp, $email, $school_origin, $attendance_session, $payment_method, $payment_proof);
@@ -335,9 +340,10 @@ if ($action === 'register' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 
         echo json_encode([
             'status' => 'success',
-            'message' => 'Pendaftaran berhasil disimpan!',
+            'message' => $is_waiting_list ? 'Pendaftaran Waiting List berhasil disimpan!' : 'Pendaftaran berhasil disimpan!',
             'ticket_code' => $ticket_code,
-            'slot_number' => $slot_number
+            'slot_number' => $slot_number,
+            'is_waiting_list' => $is_waiting_list
         ]);
     } catch (Exception $e) {
         $conn->rollback();

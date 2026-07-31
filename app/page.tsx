@@ -328,13 +328,8 @@ export default function OpenHousePage() {
   };
 
   const handleClassClickToRegister = (level: LevelQuota) => {
-    if (level.available <= 0) {
-      alert(`Maaf, kuota untuk ${level.name} sudah penuh.`);
-      return;
-    }
-
     const availableSlot = level.slots.find((s) => s.status === 'available');
-    const slotNumberToUse = availableSlot ? availableSlot.number : (level.booked + 1);
+    const slotNumberToUse = availableSlot ? availableSlot.number : 0; // 0 indicates Waiting List
 
     setSelectedLevelId(level.id);
     setSelectedSlot({ levelId: level.id, slotNumber: slotNumberToUse });
@@ -347,6 +342,12 @@ export default function OpenHousePage() {
       setLevels((prev) =>
         prev.map((lvl) => {
           if (lvl.id === selectedSlot.levelId) {
+            if (selectedSlot.slotNumber === 0) {
+              return {
+                ...lvl,
+                waitingList: (lvl.waitingList || 0) + 1
+              };
+            }
             const updatedSlots = lvl.slots.map((s) =>
               s.number === selectedSlot.slotNumber
                 ? { ...s, status: 'booked' as const, holder: 'Baru Terdaftar' }
@@ -532,14 +533,14 @@ export default function OpenHousePage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
             {availableClassesInCategory.map((lvl) => {
               const isFull = lvl.available <= 0;
+              const wlCount = lvl.waitingList || 0;
               return (
                 <button
                   key={lvl.id}
-                  disabled={isFull}
                   onClick={() => handleClassClickToRegister(lvl)}
                   className={`p-4 rounded-2xl border-2 text-left transition-all relative group flex flex-col justify-between ${
                     isFull
-                      ? 'border-slate-200 bg-slate-100 opacity-60 cursor-not-allowed'
+                      ? 'border-amber-300 bg-amber-50/70 hover:bg-amber-100/80 shadow-xs hover:shadow-md hover:-translate-y-0.5'
                       : (selectedCategory === 'transfer'
                           ? 'border-amber-200 hover:border-amber-500 bg-amber-50/40 hover:bg-amber-50 shadow-xs hover:shadow-md hover:-translate-y-0.5'
                           : 'border-blue-100 hover:border-[#293C88] bg-slate-50/70 hover:bg-blue-50/60 shadow-xs hover:shadow-md hover:-translate-y-0.5')
@@ -550,7 +551,11 @@ export default function OpenHousePage() {
                       <span className="text-xs font-bold uppercase tracking-wider text-[#293C88]">
                         Kelas {lvl.code}
                       </span>
-                      {!isFull && (
+                      {isFull ? (
+                        <span className="bg-amber-500 text-white text-[10px] font-extrabold px-2 py-0.5 rounded-full uppercase flex items-center gap-1">
+                          Waiting List
+                        </span>
+                      ) : (
                         <span className="bg-[#FED700] text-[#293C88] text-[10px] font-extrabold px-2 py-0.5 rounded-full uppercase">
                           Daftar &rarr;
                         </span>
@@ -563,10 +568,18 @@ export default function OpenHousePage() {
                   </div>
 
                   <div className="mt-4 pt-2 border-t border-slate-200/60 flex items-center justify-between">
-                    <span className="text-xs text-slate-500">Sisa Kuota:</span>
-                    <span className={`text-sm font-extrabold ${isFull ? 'text-rose-600' : 'text-emerald-600'}`}>
-                      {isFull ? 'PENUH' : `${lvl.available} / ${lvl.quota} Kursi`}
+                    <span className="text-xs text-slate-500">
+                      {isFull ? 'Waiting List:' : 'Sisa Kuota:'}
                     </span>
+                    {isFull ? (
+                      <span className="text-xs font-extrabold text-amber-700 bg-amber-200/80 px-2 py-0.5 rounded-lg border border-amber-300">
+                        {wlCount > 0 ? `${wlCount} Orang Antri` : 'Daftar Waiting List'}
+                      </span>
+                    ) : (
+                      <span className="text-sm font-extrabold text-emerald-600">
+                        {lvl.available} / {lvl.quota} Kursi
+                      </span>
+                    )}
                   </div>
                 </button>
               );
