@@ -4,5 +4,6 @@
   "/admin/dashboard/page": "/admin/dashboard",
   "/admin/login/page": "/admin/login",
   "/favicon.ico/route": "/favicon.ico",
+  "/openhouse/page": "/openhouse",
   "/page": "/"
 }

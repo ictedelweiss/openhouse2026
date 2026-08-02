@@ -58,6 +58,12 @@
       "regex": "^/favicon\\.ico(?:/)?$",
       "routeKeys": {},
       "namedRegex": "^/favicon\\.ico(?:/)?$"
+    },
+    {
+      "page": "/openhouse",
+      "regex": "^/openhouse(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/openhouse(?:/)?$"
     }
   ],
   "dataRoutes": [],

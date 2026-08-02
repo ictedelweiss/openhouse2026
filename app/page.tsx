@@ -103,39 +103,76 @@ export default function LinktreeHomePage() {
               </button>
             </div>
 
-            {/* Expander Jadwal Clean */}
+            {/* Expander Jadwal Clean & Ultra Structured */}
             {showSchedule && (
-              <div className="bg-amber-50/70 p-3.5 rounded-xl border border-amber-200/80 text-xs space-y-3 text-amber-950 font-inter animate-fadeIn">
-                <div className="font-bold text-[#002B5B] border-b border-amber-200/60 pb-1.5 flex items-center justify-between">
-                  <span>Jadwal Pra Open House - School Tour</span>
-                  <span className="text-[10px] text-amber-800 font-normal">Agustus 2026</span>
+              <div className="bg-gradient-to-b from-amber-50/90 to-[#FFFBEB] p-4 rounded-2xl border border-amber-200 shadow-xs text-xs space-y-3.5 animate-fadeIn">
+                
+                {/* Header Jadwal */}
+                <div className="flex items-center justify-between border-b border-amber-200/80 pb-2">
+                  <div className="flex items-center gap-1.5 font-extrabold text-[#002B5B]">
+                    <Calendar className="w-4 h-4 text-amber-600" />
+                    <span>JADWAL PRA OPEN HOUSE - SCHOOL TOUR</span>
+                  </div>
+                  <span className="bg-amber-200/80 text-amber-900 text-[10px] font-bold px-2.5 py-0.5 rounded-full">
+                    Agustus 2026
+                  </span>
                 </div>
 
-                {/* Weekday */}
-                <div className="space-y-1">
-                  <strong className="block text-[#002B5B]">1. Weekday (Senin - Jumat)</strong>
-                  <p className="text-[11px] text-slate-600">📅 Tanggal: 3 - 7 Agt &amp; 10 - 14 Agt 2026</p>
-                  <ul className="text-[11px] text-slate-700 pl-3 list-disc space-y-0.5 mt-1">
-                    <li>Kiddy &amp; Kindergarten: 13.00 - 16.00 WIB</li>
-                    <li>SD (Primary): 15.00 - 17.00 WIB</li>
-                    <li>SMP (Secondary): 15.00 - 17.00 WIB</li>
-                  </ul>
+                {/* 1. WEEKDAY */}
+                <div className="bg-white rounded-xl p-3 border border-amber-200/70 space-y-2 shadow-2xs">
+                  <div className="flex flex-wrap items-center justify-between gap-1 font-bold text-[#002B5B]">
+                    <span className="flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-amber-500"></span>
+                      1. Weekday
+                    </span>
+                    <span className="text-[10px] bg-amber-100 text-amber-900 px-2 py-0.5 rounded-md font-bold">
+                      3 - 7 Agt &amp; 10 - 13 Agt 2026
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-1.5 pt-1 text-[11px]">
+                    <div className="flex items-center justify-between p-2 rounded-lg bg-amber-50/50 border border-amber-100/60">
+                      <span className="font-semibold text-slate-700">🧸 Kiddy &amp; Kindergarten</span>
+                      <span className="font-extrabold text-[#002B5B] bg-white px-2 py-0.5 rounded border border-amber-200">13.00 – 16.00 WIB</span>
+                    </div>
+                    <div className="flex items-center justify-between p-2 rounded-lg bg-amber-50/50 border border-amber-100/60">
+                      <span className="font-semibold text-slate-700">🎒 SD (Primary)</span>
+                      <span className="font-extrabold text-[#002B5B] bg-white px-2 py-0.5 rounded border border-amber-200">15.00 – 17.00 WIB</span>
+                    </div>
+                    <div className="flex items-center justify-between p-2 rounded-lg bg-amber-50/50 border border-amber-100/60">
+                      <span className="font-semibold text-slate-700">🎓 SMP (Secondary)</span>
+                      <span className="font-extrabold text-[#002B5B] bg-white px-2 py-0.5 rounded border border-amber-200">15.00 – 17.00 WIB</span>
+                    </div>
+                  </div>
                 </div>
 
-                {/* Weekend */}
-                <div className="space-y-1 pt-1 border-t border-amber-200/60">
-                  <strong className="block text-[#002B5B]">2. Weekend (Sabtu)</strong>
-                  <p className="text-[11px] text-slate-600">📅 Tanggal: 8 Agustus 2026</p>
-                  <p className="text-[11px] text-slate-700">Pukul (Semua Jenjang): 09.00 - 16.00 WIB</p>
+                {/* 2. WEEKEND */}
+                <div className="bg-white rounded-xl p-3 border border-amber-200/70 space-y-2 shadow-2xs">
+                  <div className="flex flex-wrap items-center justify-between gap-1 font-bold text-[#002B5B]">
+                    <span className="flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                      2. Weekend (Sabtu)
+                    </span>
+                    <span className="text-[10px] bg-emerald-100 text-emerald-900 px-2 py-0.5 rounded-md font-bold">
+                      8 Agustus 2026
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between p-2 rounded-lg bg-emerald-50/40 border border-emerald-100 text-[11px]">
+                    <span className="font-semibold text-slate-700">🏫 Semua Jenjang (Preschool, SD, SMP)</span>
+                    <span className="font-extrabold text-emerald-900 bg-white px-2 py-0.5 rounded border border-emerald-200">09.00 – 16.00 WIB</span>
+                  </div>
                 </div>
 
-                {/* Lokasi */}
-                <div className="pt-1 border-t border-amber-200/60 text-[11px]">
-                  <strong className="text-[#002B5B] flex items-center gap-1">
-                    <MapPin className="w-3.5 h-3.5 text-amber-600" /> Lokasi:
-                  </strong>
-                  <span className="text-slate-700 block mt-0.5">Edelweiss Jatibening Estate &amp; Edelweiss Ratna</span>
+                {/* 3. LOKASI */}
+                <div className="bg-[#002B5B] text-white p-3 rounded-xl flex items-start gap-2.5 shadow-2xs">
+                  <MapPin className="w-4 h-4 text-[#FED700] shrink-0 mt-0.5" />
+                  <div className="text-[11px] leading-tight">
+                    <strong className="text-[#FED700] block mb-0.5">Lokasi School Tour:</strong>
+                    <span className="text-slate-100">Edelweiss Jatibening Estate &amp; Edelweiss Ratna</span>
+                  </div>
                 </div>
+
               </div>
             )}
 
