@@ -410,7 +410,7 @@ const FIXED_LEVEL_ORDER = [
               <ArrowLeft className="w-3.5 h-3.5" /> Portal Utama
             </Link>
             <span className="bg-[#FED700] text-[#293C88] px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase hidden sm:flex items-center gap-1">
-              <Zap className="w-3 h-3" /> Cloudflare Ready
+              <Zap className="w-3 h-3" /> Siap Digunakan
             </span>
             <span className="text-slate-200 hidden md:inline">Pendaftaran Edelweiss Open House</span>
           </div>
@@ -608,7 +608,7 @@ const FIXED_LEVEL_ORDER = [
               </div>
             </div>
             <span className="bg-emerald-200 text-emerald-900 px-2.5 py-1 rounded-full text-[10px] font-bold">
-              Multi-Child Session
+              Sesi Multi-Anak
             </span>
           </div>
         )}

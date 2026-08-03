@@ -449,7 +449,7 @@ export default function AdminDashboardPage() {
               onClick={handleExportCSV}
               className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm"
             >
-              <Download className="w-4 h-4" /> Export CSV / Excel
+              <Download className="w-4 h-4" /> Ekspor CSV / Excel
             </button>
           </div>
         </div>
@@ -460,14 +460,14 @@ export default function AdminDashboardPage() {
             <h3 className="font-bold text-sm text-[#002B5B]">
               Daftar Data Pendaftaran Calon Siswa ({filteredRegistrations.length})
             </h3>
-            <span className="text-xs text-slate-500 font-medium">Verified System</span>
+            <span className="text-xs text-slate-500 font-medium">Sistem Terverifikasi</span>
           </div>
 
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs text-slate-700">
               <thead className="bg-slate-100/70 text-slate-600 uppercase text-[10px] font-bold tracking-wider border-b border-slate-200">
                 <tr>
-                  <th className="py-3.5 px-4">Kode &amp; Anak</th>
+                  <th className="py-3.5 px-4">Nama Anak</th>
                   <th className="py-3.5 px-4">Tgl Lahir &amp; JK</th>
                   <th className="py-3.5 px-4">Kelas &amp; Tipe</th>
                   <th className="py-3.5 px-4">Ortu, WhatsApp &amp; Email</th>
@@ -487,8 +487,7 @@ export default function AdminDashboardPage() {
                   filteredRegistrations.map((item) => (
                     <tr key={item.id} className="hover:bg-slate-50/80 transition">
                       <td className="py-3.5 px-4">
-                        <span className="font-extrabold text-[#293C88] block">{item.ticket_code}</span>
-                        <strong className="text-slate-900 font-bold block mt-0.5">{item.child_name}</strong>
+                        <strong className="text-slate-900 font-bold block">{item.child_name}</strong>
                       </td>
 
                       <td className="py-3.5 px-4">
@@ -539,7 +538,7 @@ export default function AdminDashboardPage() {
                               ? 'bg-blue-100 text-[#293C88]'
                               : 'bg-amber-100 text-amber-800'
                           }`}>
-                            {item.payment_method === 'pay_now' ? 'Pay Now (Transfer)' : 'Pay On-site (Di Lokasi)'}
+                            {item.payment_method === 'pay_now' ? 'Bayar Sekarang (Transfer)' : 'Bayar Di Lokasi'}
                           </span>
 
                           {/* Direct Download Bukti Bayar */}
@@ -553,7 +552,7 @@ export default function AdminDashboardPage() {
                               title="Klik untuk langsung mengunduh bukti pembayaran"
                             >
                               <Download className="w-3.5 h-3.5 text-emerald-600" />
-                              <span>Download Bukti Bayar</span>
+                              <span>Unduh Bukti Bayar</span>
                             </a>
                           ) : (
                             /* Tombol Upload Bukti Pembayaran untuk Pay On-site / Belum Upload */
@@ -566,7 +565,7 @@ export default function AdminDashboardPage() {
                               className="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold px-2.5 py-1 rounded-lg text-[11px] transition flex items-center justify-center gap-1 shadow-sm"
                             >
                               <Upload className="w-3.5 h-3.5 text-white" />
-                              <span>Upload Bukti Bayar</span>
+                              <span>Unggah Bukti Bayar</span>
                             </button>
                           )}
                         </div>
@@ -611,15 +610,15 @@ export default function AdminDashboardPage() {
 
             <div className="flex items-center gap-2 mb-2">
               <span className="bg-amber-100 text-amber-800 text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full flex items-center gap-1">
-                <Upload className="w-3 h-3 text-amber-600" /> UPLOAD BUKTI ADMIN
+                <Upload className="w-3 h-3 text-amber-600" /> UNGGAH BUKTI ADMIN
               </span>
             </div>
 
             <h3 className="text-lg font-bold text-[#002B5B]">
-              Upload Bukti Pembayaran
+              Unggah Bukti Pembayaran
             </h3>
             <p className="text-xs text-slate-500 mb-4">
-              Pendaftar Pay On-site: <strong>{uploadModalData.childName}</strong> ({uploadModalData.ticketCode})
+              Pendaftar Bayar Di Lokasi: <strong>{uploadModalData.childName}</strong>
             </p>
 
             <form onSubmit={handleAdminSubmitProof} className="space-y-4">

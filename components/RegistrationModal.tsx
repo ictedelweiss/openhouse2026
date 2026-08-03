@@ -278,15 +278,9 @@ export default function RegistrationModal({
                 : <>Terima kasih! Tiket konfirmasi dan instruksi Open House telah dikirimkan ke email <strong>{formData.email}</strong>.</>}
             </p>
 
-            {/* Ticket Card Box */}
+            {/* Kartu Ringkasan Pendaftaran */}
             <div className="bg-slate-50 p-5 rounded-2xl border-2 border-dashed border-[#293C88]/30 w-full max-w-md text-left mb-6 relative">
-              <div className="flex justify-between items-start mb-3 pb-3 border-b border-slate-200">
-                <div>
-                  <div className="text-[10px] uppercase font-bold text-slate-400">KODE REGISTRASI RESMI</div>
-                  <div className="text-base font-extrabold text-[#293C88] flex items-center gap-1.5">
-                    <Ticket className="w-4 h-4 text-[#FED700]" /> {submittedData.ticketCode}
-                  </div>
-                </div>
+              <div className="flex justify-end mb-3 pb-3 border-b border-slate-200">
                 <div className={`px-3 py-1 rounded-lg text-center ${isWaiting ? 'bg-amber-500 text-white' : 'bg-[#293C88] text-white'}`}>
                   <div className="text-[9px] uppercase">STATUS</div>
                   <div className="text-xs font-extrabold text-[#FED700]">{isWaiting ? 'WAITING LIST' : 'TERVERIFIKASI'}</div>
@@ -501,16 +495,16 @@ export default function RegistrationModal({
               <div className="bg-amber-50/60 rounded-2xl p-4 border border-amber-200/80 space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="bg-[#FED700] text-[#293C88] text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-md">
-                    OPEN HOUSE ATTENDANCE
+                    KEHADIRAN OPEN HOUSE
                   </span>
-                  <span className="text-[10px] font-bold text-amber-900">SELECT SESSION *</span>
+                  <span className="text-[10px] font-bold text-amber-900">PILIH SESI *</span>
                 </div>
 
                 <h4 className="text-sm font-bold text-[#002B5B]">
-                  Confirm Open House Attendance
+                  Konfirmasi Kehadiran Open House
                 </h4>
                 <p className="text-xs text-slate-600">
-                  Please select your preferred arrival time and session for the Open House.
+                  Silakan pilih waktu kedatangan dan sesi yang Anda inginkan untuk acara Open House.
                 </p>
 
                 <div className="space-y-3 pt-1">
@@ -555,7 +549,10 @@ export default function RegistrationModal({
             {!isWaiting && (
               <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200 space-y-3">
                 <p className="text-xs text-slate-700 font-medium">
-                  To secure these exclusive benefits, please complete the <strong className="text-[#002B5B]">Rp 500,000 booking fee payment</strong>. This investment grants you full access to all our Open House offers.
+                  Untuk mengamankan keuntungan eksklusif ini, silakan selesaikan pembayaran <strong className="text-[#002B5B]">biaya pendaftaran sebesar Rp 500.000</strong>. Biaya ini memberikan Anda akses penuh ke seluruh penawaran Open House kami.
+                </p>
+                <p className="text-xs text-amber-800 font-semibold bg-amber-50 border border-amber-200 p-2.5 rounded-lg mt-1">
+                  💡 Biaya ini nantinya akan <strong>memotong biaya registrasi</strong> jika anak dinyatakan <strong className="text-emerald-700">DITERIMA</strong> dan akan <strong>dikembalikan sepenuhnya</strong> jika anak dinyatakan <strong className="text-rose-600">TIDAK DITERIMA</strong>.
                 </p>
 
                 {/* Opsi Pilihan Pembayaran: Pay Now vs Pay On-site */}
@@ -574,7 +571,7 @@ export default function RegistrationModal({
                       onChange={handleChange}
                       className="accent-[#293C88]"
                     />
-                    <span>Pay Now (Transfer)</span>
+                    <span>Bayar Sekarang (Transfer)</span>
                   </label>
 
                   <label
@@ -591,7 +588,7 @@ export default function RegistrationModal({
                       onChange={handleChange}
                       className="accent-[#293C88]"
                     />
-                    <span>Pay On-site (Di Lokasi)</span>
+                    <span>Bayar Di Lokasi</span>
                   </label>
                 </div>
 
@@ -599,12 +596,12 @@ export default function RegistrationModal({
                 {formData.payment_method === 'pay_now' && (
                   <div className="bg-blue-50/70 p-3.5 rounded-xl border border-blue-200/80 space-y-2">
                     <div className="text-xs text-blue-900 font-semibold flex items-center gap-1">
-                      <CreditCard className="w-4 h-4 text-[#293C88]" /> Rekening Transfer Bank Mandiri: <strong>123-000-9876-543</strong> a.n. Edelweiss Learning Center
+                      <CreditCard className="w-4 h-4 text-[#293C88]" /> Rekening Transfer Bank Mandiri: <strong>123-000-9876-543</strong> a/n Edelweiss Learning Center
                     </div>
 
                     <div className="pt-1">
                       <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center gap-1">
-                        <Upload className="w-3.5 h-3.5 text-[#293C88]" /> Upload Bukti Pembayaran / Transfer
+                        <Upload className="w-3.5 h-3.5 text-[#293C88]" /> Unggah Bukti Pembayaran / Transfer
                       </label>
                       <input
                         type="file"
@@ -615,12 +612,12 @@ export default function RegistrationModal({
                       />
                       {uploadingFile && (
                         <span className="text-[11px] text-blue-600 font-bold block mt-1 animate-pulse">
-                          ⏳ Mengupload file ke server...
+                          ⏳ Sedang mengunggah file...
                         </span>
                       )}
                       {!uploadingFile && paymentProofFileName && formData.payment_proof && (
                         <span className="text-[11px] text-emerald-700 font-bold block mt-1">
-                          ✓ File berhasil diupload: {paymentProofFileName}
+                          ✓ File berhasil diunggah: {paymentProofFileName}
                         </span>
                       )}
                     </div>
@@ -633,10 +630,10 @@ export default function RegistrationModal({
             <div className="bg-[#002B5B] text-white p-3 rounded-xl flex items-center justify-between text-xs font-semibold">
               <div className="flex items-center gap-2">
                 <CheckCircle className="w-4 h-4 text-[#FED700]" />
-                <span>Cloudflare Turnstile Verified (Prototype Mode)</span>
+                <span>Cloudflare Turnstile Terverifikasi (Mode Prototipe)</span>
               </div>
               <span className="text-[10px] text-blue-200 font-bold uppercase tracking-wider flex items-center gap-1">
-                <ShieldCheck className="w-3.5 h-3.5 text-[#FED700]" /> SECURE SSL
+                <ShieldCheck className="w-3.5 h-3.5 text-[#FED700]" /> SSL AMAN
               </span>
             </div>
 
@@ -661,10 +658,10 @@ export default function RegistrationModal({
                 }`}
               >
                 {loading
-                  ? 'Menyimpan Registration...'
+                  ? 'Menyimpan Pendaftaran...'
                   : isWaiting
                   ? 'KIRIM PENDAFTARAN WAITING LIST'
-                  : 'SUBMIT REGISTRATION'}
+                  : 'KIRIM PENDAFTARAN'}
               </button>
             </div>
           </form>
