@@ -690,4 +690,81 @@ if ($action === 'get_allocated_students' && $_SERVER['REQUEST_METHOD'] === 'GET'
     exit();
 }
 
+// ============================
+// 14. IMPORT SCHEDULES
+// ============================
+if ($action === 'import_schedules' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    $raw_input = file_get_contents('php://input');
+    $input = json_decode($raw_input, true);
+    
+    if (!isset($input['schedules']) || !is_array($input['schedules'])) {
+        echo json_encode(['status' => 'error', 'message' => 'Format data tidak valid.']);
+        exit();
+    }
+    
+    $conn->begin_transaction();
+    try {
+        $stmt = $conn->prepare("INSERT INTO assessment_schedules (date, start_time, end_time, level, capacity) VALUES (?, ?, ?, ?, ?)");
+        
+        $inserted_count = 0;
+        foreach ($input['schedules'] as $row) {
+            $date = $row['tanggal'] ?? '';
+            $start_time = $row['jam_mulai'] ?? '';
+            $end_time = $row['jam_selesai'] ?? '';
+            $level_raw = strtolower(trim($row['tingkat'] ?? ''));
+            
+            // Skip empty rows
+            if (empty($date) && empty($start_time) && empty($level_raw)) continue;
+            
+            // Validate required fields
+            if (empty($date) || empty($start_time) || empty($end_time) || empty($level_raw)) {
+                throw new Exception('Ada baris data yang belum lengkap (Tanggal, Jam Mulai, Jam Selesai, atau Tingkat).');
+            }
+            
+            // Normalize level and capacity
+            $level = 'primary'; // fallback
+            $capacity = 10;
+            
+            if (strpos($level_raw, 'kiddy') !== false || strpos($level_raw, 'kindergarten') !== false || strpos($level_raw, 'tk') !== false || strpos($level_raw, 'k2') !== false || strpos($level_raw, 'k1') !== false) {
+                $level = 'kiddy';
+                $capacity = 1; // Locked for one on one
+            } elseif (strpos($level_raw, 'secondary') !== false || strpos($level_raw, 'smp') !== false || strpos($level_raw, 'sma') !== false) {
+                $level = 'secondary';
+                $capacity = 10;
+            } else {
+                $level = 'primary';
+                $capacity = 10;
+            }
+            
+            // Basic format validation
+            if (!preg_match("/^\d{4}-\d{2}-\d{2}$/", $date)) {
+                // Try converting MM/DD/YYYY or DD/MM/YYYY to YYYY-MM-DD
+                $time = strtotime(str_replace('/', '-', $date));
+                if ($time !== false) {
+                    $date = date('Y-m-d', $time);
+                } else {
+                    throw new Exception("Format tanggal salah: $date. Gunakan YYYY-MM-DD.");
+                }
+            }
+            
+            $stmt->bind_param("ssssi", $date, $start_time, $end_time, $level, $capacity);
+            if (!$stmt->execute()) {
+                throw new Exception("Gagal menyimpan jadwal untuk tanggal $date.");
+            }
+            $inserted_count++;
+        }
+        
+        if ($inserted_count === 0) {
+            throw new Exception("Tidak ada data jadwal valid yang ditemukan.");
+        }
+        
+        $conn->commit();
+        echo json_encode(['status' => 'success', 'message' => "$inserted_count jadwal berhasil diimpor."]);
+    } catch (Exception $e) {
+        $conn->rollback();
+        echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
+    }
+    exit();
+}
+
 echo json_encode(['status' => 'error', 'message' => 'Invalid action']);

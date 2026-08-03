@@ -250,6 +250,69 @@ export default function AdminDashboardPage() {
     } catch (e) { console.error(e); }
   };
 
+  const [isImporting, setIsImporting] = useState(false);
+
+  const handleDownloadCSVTemplate = () => {
+    const csvContent = 'tanggal,jam_mulai,jam_selesai,tingkat\n2026-08-10,08:00,09:00,kiddy\n2026-08-10,09:00,10:00,primary\n2026-08-10,10:00,11:00,secondary';
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = 'template_import_jadwal.csv';
+    link.click();
+  };
+
+  const handleImportCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsImporting(true);
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      const text = event.target?.result as string;
+      const lines = text.split('\n').map(l => l.trim()).filter(l => l);
+      if (lines.length < 2) {
+        alert('File CSV kosong atau tidak memiliki data.');
+        setIsImporting(false);
+        return;
+      }
+      
+      const headers = lines[0].toLowerCase().split(',').map(h => h.trim());
+      const schedulesToImport = [];
+      
+      for (let i = 1; i < lines.length; i++) {
+        const values = lines[i].split(',').map(v => v.trim());
+        const rowData: Record<string, string> = {};
+        headers.forEach((h, index) => {
+          if (values[index] !== undefined) rowData[h] = values[index];
+        });
+        schedulesToImport.push(rowData);
+      }
+      
+      try {
+        const res = await fetch(`${API_BASE_URL}?action=import_schedules`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ schedules: schedulesToImport })
+        });
+        const json = await res.json();
+        alert(json.message);
+        if (json.status === 'success') {
+          fetchSchedules();
+        }
+      } catch (err) {
+        alert('Terjadi kesalahan jaringan saat mengimpor data.');
+      } finally {
+        setIsImporting(false);
+        e.target.value = ''; // reset input
+      }
+    };
+    reader.onerror = () => {
+      alert('Gagal membaca file.');
+      setIsImporting(false);
+    };
+    reader.readAsText(file);
+  };
+
   const loadScheduleDetails = async (schedule: AssessmentSchedule) => {
     setSelectedSchedule(schedule);
     try {
@@ -800,6 +863,37 @@ export default function AdminDashboardPage() {
                     </button>
                   </div>
                 </form>
+              </div>
+
+              {/* Import Jadwal CSV */}
+              <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200/80">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                  <div>
+                    <h3 className="font-bold text-sm text-[#002B5B] mb-1 flex items-center gap-2">
+                      <Upload className="w-4 h-4 text-[#FED700]" /> Import Jadwal (Excel / CSV)
+                    </h3>
+                    <p className="text-xs text-slate-500">Buat jadwal sekaligus banyak melalui file CSV.</p>
+                  </div>
+                  <div className="flex gap-2 w-full sm:w-auto">
+                    <button
+                      onClick={handleDownloadCSVTemplate}
+                      className="px-3 py-2 text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg flex items-center gap-1.5 transition"
+                    >
+                      <Download className="w-3.5 h-3.5" /> Template
+                    </button>
+                    <label className="px-3 py-2 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg flex items-center justify-center gap-1.5 cursor-pointer transition w-full sm:w-auto relative">
+                      {isImporting ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
+                      {isImporting ? 'Mengimpor...' : 'Pilih File CSV'}
+                      <input 
+                        type="file" 
+                        accept=".csv" 
+                        onChange={handleImportCSV} 
+                        disabled={isImporting}
+                        className="hidden" 
+                      />
+                    </label>
+                  </div>
+                </div>
               </div>
 
               {/* Daftar Jadwal */}
