@@ -281,6 +281,8 @@ if ($action === 'register' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $registration_type = isset($input['registration_type']) ? $conn->real_escape_string($input['registration_type']) : 'new';
     $child_name = isset($input['child_name']) ? $conn->real_escape_string($input['child_name']) : '';
     $birth_date = isset($input['birth_date']) ? $conn->real_escape_string($input['birth_date']) : '';
+    $gender = isset($input['gender']) ? $conn->real_escape_string($input['gender']) : 'Laki-laki';
+    $parent_name = isset($input['parent_name']) ? $conn->real_escape_string($input['parent_name']) : '';
     $payment_method = isset($input['payment_method']) ? $conn->real_escape_string($input['payment_method']) : 'pay_now';
     $payment_proof_raw = isset($input['payment_proof']) ? $input['payment_proof'] : '';
     $payment_proof = '';
