@@ -154,7 +154,7 @@ if ($action === 'admin_login' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         exit();
     }
 
-    if ($username === 'admin' && $password === 'admin123') {
+    if ($username === 'admin' && $password === 'Bunga.edelweiss') {
         echo json_encode([
             'status' => 'success',
             'message' => 'Login Admin Berhasil!',
