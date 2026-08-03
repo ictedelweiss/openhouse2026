@@ -471,5 +471,223 @@ if ($action === 'delete_registration' && $_SERVER['REQUEST_METHOD'] === 'POST') 
     }
     exit();
 }
+// ============================
+// 7. GET SCHEDULES
+// ============================
+if ($action === 'get_schedules' && $_SERVER['REQUEST_METHOD'] === 'GET') {
+    $query = "SELECT s.*, 
+              (SELECT COUNT(*) FROM assessment_allocations a WHERE a.schedule_id = s.id) as allocated_count 
+              FROM assessment_schedules s 
+              ORDER BY s.date ASC, s.start_time ASC";
+    $result = $conn->query($query);
+    $schedules = [];
+    if ($result && $result->num_rows > 0) {
+        while ($row = $result->fetch_assoc()) {
+            $schedules[] = $row;
+        }
+    }
+    echo json_encode(['status' => 'success', 'data' => $schedules]);
+    exit();
+}
+
+// ============================
+// 8. CREATE SCHEDULE
+// ============================
+if ($action === 'create_schedule' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    $raw_input = file_get_contents('php://input');
+    $input = json_decode($raw_input, true);
+    
+    $date = $input['date'] ?? '';
+    $start_time = $input['start_time'] ?? '';
+    $end_time = $input['end_time'] ?? '';
+    $level = $input['level'] ?? '';
+    $capacity = isset($input['capacity']) ? (int)$input['capacity'] : 10;
+    
+    if (empty($date) || empty($start_time) || empty($end_time) || empty($level)) {
+        echo json_encode(['status' => 'error', 'message' => 'Semua kolom wajib diisi.']);
+        exit();
+    }
+    
+    if ($level === 'kiddy') {
+        $capacity = 1; // Locked for kiddy
+    } else {
+        if ($capacity > 10) $capacity = 10;
+        if ($capacity < 1) $capacity = 1;
+    }
+    
+    $stmt = $conn->prepare("INSERT INTO assessment_schedules (date, start_time, end_time, level, capacity) VALUES (?, ?, ?, ?, ?)");
+    $stmt->bind_param("ssssi", $date, $start_time, $end_time, $level, $capacity);
+    if ($stmt->execute()) {
+        echo json_encode(['status' => 'success', 'message' => 'Jadwal assessment berhasil dibuat.']);
+    } else {
+        echo json_encode(['status' => 'error', 'message' => 'Gagal membuat jadwal.']);
+    }
+    exit();
+}
+
+// ============================
+// 9. DELETE SCHEDULE
+// ============================
+if ($action === 'delete_schedule' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    $raw_input = file_get_contents('php://input');
+    $input = json_decode($raw_input, true);
+    $id = isset($input['id']) ? (int)$input['id'] : 0;
+    
+    // Check if there are allocations
+    $check = $conn->prepare("SELECT COUNT(*) as count FROM assessment_allocations WHERE schedule_id = ?");
+    $check->bind_param("i", $id);
+    $check->execute();
+    $res = $check->get_result()->fetch_assoc();
+    if ($res['count'] > 0) {
+        echo json_encode(['status' => 'error', 'message' => 'Gagal menghapus: Jadwal sudah memiliki siswa yang dialokasikan.']);
+        exit();
+    }
+    
+    $stmt = $conn->prepare("DELETE FROM assessment_schedules WHERE id = ?");
+    $stmt->bind_param("i", $id);
+    if ($stmt->execute()) {
+        echo json_encode(['status' => 'success', 'message' => 'Jadwal berhasil dihapus.']);
+    } else {
+        echo json_encode(['status' => 'error', 'message' => 'Gagal menghapus jadwal.']);
+    }
+    exit();
+}
+
+// ============================
+// 10. GET UNALLOCATED STUDENTS (Filtered by broad level category)
+// ============================
+if ($action === 'get_unallocated_students' && $_SERVER['REQUEST_METHOD'] === 'GET') {
+    $target_level = $_GET['level'] ?? '';
+    
+    // Base query: get students who are not in assessment_allocations
+    $query = "SELECT r.id, r.child_name, r.ticket_code, r.level_id, l.name as level_name 
+              FROM registrations r
+              JOIN levels l ON r.level_id = l.id
+              LEFT JOIN assessment_allocations a ON r.id = a.student_id
+              WHERE a.id IS NULL";
+              
+    $result = $conn->query($query);
+    $students = [];
+    if ($result && $result->num_rows > 0) {
+        while ($row = $result->fetch_assoc()) {
+            $lvl_name = strtolower($row['level_name']);
+            // Determine broad category from level name
+            $cat = '';
+            if (strpos($lvl_name, 'kiddy') !== false || strpos($lvl_name, 'kindergarten') !== false || strpos($lvl_name, 'k2') !== false) {
+                $cat = 'kiddy';
+            } elseif (strpos($lvl_name, 'primary') !== false) {
+                $cat = 'primary';
+            } elseif (strpos($lvl_name, 'secondary') !== false) {
+                $cat = 'secondary';
+            }
+            
+            if ($cat === $target_level || $target_level === '') {
+                $students[] = $row;
+            }
+        }
+    }
+    echo json_encode(['status' => 'success', 'data' => $students]);
+    exit();
+}
+
+// ============================
+// 11. ALLOCATE STUDENT TO SCHEDULE
+// ============================
+if ($action === 'allocate_student' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    $raw_input = file_get_contents('php://input');
+    $input = json_decode($raw_input, true);
+    
+    $schedule_id = isset($input['schedule_id']) ? (int)$input['schedule_id'] : 0;
+    $student_id = isset($input['student_id']) ? (int)$input['student_id'] : 0;
+    
+    if ($schedule_id <= 0 || $student_id <= 0) {
+        echo json_encode(['status' => 'error', 'message' => 'Schedule ID atau Student ID tidak valid.']);
+        exit();
+    }
+    
+    $conn->begin_transaction();
+    try {
+        // Double booking check is handled by UNIQUE KEY unique_student_allocation (student_id), but let's check it directly
+        $check_student = $conn->prepare("SELECT id FROM assessment_allocations WHERE student_id = ?");
+        $check_student->bind_param("i", $student_id);
+        $check_student->execute();
+        if ($check_student->get_result()->num_rows > 0) {
+            throw new Exception('Siswa ini sudah dialokasikan ke jadwal lain.');
+        }
+        
+        // Capacity check
+        $check_cap = $conn->prepare("
+            SELECT s.capacity, (SELECT COUNT(*) FROM assessment_allocations a WHERE a.schedule_id = s.id) as allocated_count
+            FROM assessment_schedules s
+            WHERE s.id = ? FOR UPDATE
+        ");
+        $check_cap->bind_param("i", $schedule_id);
+        $check_cap->execute();
+        $res = $check_cap->get_result()->fetch_assoc();
+        
+        if (!$res) throw new Exception('Jadwal tidak ditemukan.');
+        if ($res['allocated_count'] >= $res['capacity']) {
+            throw new Exception('Gagal: Kapasitas jadwal ini sudah penuh.');
+        }
+        
+        $insert = $conn->prepare("INSERT INTO assessment_allocations (schedule_id, student_id) VALUES (?, ?)");
+        $insert->bind_param("ii", $schedule_id, $student_id);
+        $insert->execute();
+        
+        $conn->commit();
+        echo json_encode(['status' => 'success', 'message' => 'Siswa berhasil dialokasikan.']);
+    } catch (Exception $e) {
+        $conn->rollback();
+        echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
+    }
+    exit();
+}
+
+// ============================
+// 12. UNALLOCATE STUDENT
+// ============================
+if ($action === 'unallocate_student' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    $raw_input = file_get_contents('php://input');
+    $input = json_decode($raw_input, true);
+    
+    $schedule_id = isset($input['schedule_id']) ? (int)$input['schedule_id'] : 0;
+    $student_id = isset($input['student_id']) ? (int)$input['student_id'] : 0;
+    
+    $stmt = $conn->prepare("DELETE FROM assessment_allocations WHERE schedule_id = ? AND student_id = ?");
+    $stmt->bind_param("ii", $schedule_id, $student_id);
+    if ($stmt->execute()) {
+        echo json_encode(['status' => 'success', 'message' => 'Siswa berhasil dihapus dari jadwal.']);
+    } else {
+        echo json_encode(['status' => 'error', 'message' => 'Gagal menghapus siswa dari jadwal.']);
+    }
+    exit();
+}
+
+// ============================
+// 13. GET ALLOCATED STUDENTS FOR SCHEDULE
+// ============================
+if ($action === 'get_allocated_students' && $_SERVER['REQUEST_METHOD'] === 'GET') {
+    $schedule_id = isset($_GET['schedule_id']) ? (int)$_GET['schedule_id'] : 0;
+    
+    $query = "SELECT r.id, r.child_name, r.ticket_code, r.level_id, l.name as level_name, a.id as allocation_id
+              FROM assessment_allocations a
+              JOIN registrations r ON a.student_id = r.id
+              JOIN levels l ON r.level_id = l.id
+              WHERE a.schedule_id = ?";
+              
+    $stmt = $conn->prepare($query);
+    $stmt->bind_param("i", $schedule_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    $students = [];
+    if ($result && $result->num_rows > 0) {
+        while ($row = $result->fetch_assoc()) {
+            $students[] = $row;
+        }
+    }
+    echo json_encode(['status' => 'success', 'data' => $students]);
+    exit();
+}
 
 echo json_encode(['status' => 'error', 'message' => 'Invalid action']);

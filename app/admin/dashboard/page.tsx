@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import AdminNavbar from '@/components/AdminNavbar';
-import { Users, School, Download, Search, Trash2, ArrowRightLeft, UserCheck, RefreshCw, Image as ImageIcon, Upload, Eye, X, CheckCircle, CreditCard } from 'lucide-react';
+import { Users, School, Download, Search, Trash2, ArrowRightLeft, UserCheck, RefreshCw, Image as ImageIcon, Upload, Eye, X, CheckCircle, CreditCard, Calendar, Clock, Plus, UserPlus } from 'lucide-react';
 import { API_BASE_URL } from '@/lib/api-config';
 
 interface RegistrationRecord {
@@ -26,6 +26,31 @@ interface RegistrationRecord {
   payment_method: 'pay_now' | 'pay_onsite';
   payment_proof?: string | null;
   created_at: string;
+}
+
+interface AssessmentSchedule {
+  id: number;
+  date: string;
+  start_time: string;
+  end_time: string;
+  level: 'kiddy' | 'primary' | 'secondary';
+  capacity: number;
+  allocated_count: number;
+}
+
+interface UnallocatedStudent {
+  id: number;
+  child_name: string;
+  ticket_code: string;
+  level_name: string;
+}
+
+interface AllocatedStudent {
+  id: number;
+  child_name: string;
+  ticket_code: string;
+  level_name: string;
+  allocation_id: number;
 }
 
 const DUMMY_RECEIPT_IMG = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="550" viewBox="0 0 400 550" fill="%23f8fafc"><rect width="400" height="550" fill="%23ffffff" rx="16" stroke="%23cbd5e1" stroke-width="2"/><text x="200" y="50" font-family="sans-serif" font-size="18" font-weight="bold" fill="%23293c88" text-anchor="middle">BUKTI TRANSFER RESMI</text><text x="200" y="80" font-family="sans-serif" font-size="12" fill="%2364748b" text-anchor="middle">Edelweiss Learning Center Open House</text><line x1="40" y1="100" x2="360" y2="100" stroke="%23e2e8f0" stroke-width="2" stroke-dasharray="4"/><text x="50" y="140" font-family="sans-serif" font-size="12" fill="%2364748b">Bank Tujuan:</text><text x="350" y="140" font-family="sans-serif" font-size="12" font-weight="bold" fill="%230f172a" text-anchor="end">Bank Mandiri</text><text x="50" y="180" font-family="sans-serif" font-size="12" fill="%2364748b">Jumlah Transfer:</text><text x="350" y="180" font-family="sans-serif" font-size="16" font-weight="bold" fill="%2316a34a" text-anchor="end">Rp 500.000</text><text x="50" y="220" font-family="sans-serif" font-size="12" fill="%2364748b">Status:</text><text x="350" y="220" font-family="sans-serif" font-size="12" font-weight="bold" fill="%23293c88" text-anchor="end">BERHASIL / VERIFIED</text><rect x="40" y="260" width="320" height="200" fill="%23f1f5f9" rx="12"/><text x="200" y="360" font-family="sans-serif" font-size="14" font-weight="bold" fill="%23002b5b" text-anchor="middle">Struk Bukti Pembayaran Valid</text><text x="200" y="510" font-family="sans-serif" font-size="11" fill="%2394a3b8" text-anchor="middle">Verified by Admin System</text></svg>';
@@ -105,6 +130,24 @@ export default function AdminDashboardPage() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isLiveDb, setIsLiveDb] = useState(false);
   
+  // Tab Navigation
+  const [activeTab, setActiveTab] = useState<'registrations' | 'schedules'>('registrations');
+  
+  // Assessment Scheduling States
+  const [schedules, setSchedules] = useState<AssessmentSchedule[]>([]);
+  const [unallocatedStudents, setUnallocatedStudents] = useState<UnallocatedStudent[]>([]);
+  const [allocatedStudents, setAllocatedStudents] = useState<AllocatedStudent[]>([]);
+  const [selectedSchedule, setSelectedSchedule] = useState<AssessmentSchedule | null>(null);
+  const [studentToAllocate, setStudentToAllocate] = useState<string>('');
+
+  const [scheduleForm, setScheduleForm] = useState({
+    date: '',
+    start_time: '',
+    end_time: '',
+    level: 'primary',
+    capacity: 10
+  });
+  
   // Modal Pop Up Upload Bukti Bayar oleh Admin
   const [uploadModalData, setUploadModalData] = useState<{ id: number; childName: string; ticketCode: string } | null>(null);
   const [adminUploadFile, setAdminUploadFile] = useState<string | null>(null);
@@ -145,6 +188,117 @@ export default function AdminDashboardPage() {
     } finally {
       setIsRefreshing(false);
     }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'schedules') {
+      fetchSchedules();
+    }
+  }, [activeTab]);
+
+  const fetchSchedules = async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}?action=get_schedules`);
+      const json = await res.json();
+      if (json.status === 'success') setSchedules(json.data);
+    } catch (e) { console.error(e); }
+  };
+
+  const handleScheduleFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    const newForm = { ...scheduleForm, [name]: value };
+    if (name === 'level') {
+      newForm.capacity = value === 'kiddy' ? 1 : 10;
+    }
+    setScheduleForm(newForm);
+  };
+
+  const handleCreateSchedule = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const res = await fetch(`${API_BASE_URL}?action=create_schedule`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(scheduleForm)
+      });
+      const json = await res.json();
+      if (json.status === 'success') {
+        alert(json.message);
+        fetchSchedules();
+        setScheduleForm({ date: '', start_time: '', end_time: '', level: 'primary', capacity: 10 });
+      } else {
+        alert(json.message);
+      }
+    } catch (e) { alert('Gagal memproses request.'); }
+  };
+
+  const handleDeleteSchedule = async (id: number) => {
+    if (!confirm('Hapus jadwal ini?')) return;
+    try {
+      const res = await fetch(`${API_BASE_URL}?action=delete_schedule`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id })
+      });
+      const json = await res.json();
+      if (json.status === 'success') {
+        fetchSchedules();
+        if (selectedSchedule?.id === id) setSelectedSchedule(null);
+      } else {
+        alert(json.message);
+      }
+    } catch (e) { console.error(e); }
+  };
+
+  const loadScheduleDetails = async (schedule: AssessmentSchedule) => {
+    setSelectedSchedule(schedule);
+    try {
+      const [resAlloc, resUnalloc] = await Promise.all([
+        fetch(`${API_BASE_URL}?action=get_allocated_students&schedule_id=${schedule.id}`),
+        fetch(`${API_BASE_URL}?action=get_unallocated_students&level=${schedule.level}`)
+      ]);
+      const jsonAlloc = await resAlloc.json();
+      const jsonUnalloc = await resUnalloc.json();
+      if (jsonAlloc.status === 'success') setAllocatedStudents(jsonAlloc.data);
+      if (jsonUnalloc.status === 'success') setUnallocatedStudents(jsonUnalloc.data);
+    } catch (e) { console.error(e); }
+  };
+
+  const handleAllocate = async (studentId: number) => {
+    if (!selectedSchedule) return;
+    try {
+      const res = await fetch(`${API_BASE_URL}?action=allocate_student`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ schedule_id: selectedSchedule.id, student_id: studentId })
+      });
+      const json = await res.json();
+      if (json.status === 'success') {
+        loadScheduleDetails(selectedSchedule);
+        fetchSchedules();
+      } else {
+        alert(json.message);
+      }
+    } catch (e) { console.error(e); }
+  };
+
+  const handleUnallocate = async (studentId: number) => {
+    if (!selectedSchedule) return;
+    if (!confirm('Hapus siswa dari jadwal ini?')) return;
+    try {
+      const res = await fetch(`${API_BASE_URL}?action=unallocate_student`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ schedule_id: selectedSchedule.id, student_id: studentId })
+      });
+      const json = await res.json();
+      if (json.status === 'success') {
+        loadScheduleDetails(selectedSchedule);
+        fetchSchedules();
+      } else {
+        alert(json.message);
+      }
+    } catch (e) { console.error(e); }
   };
 
   // Handler Upload Bukti Pembayaran oleh Admin (Pay On-site / Pay Now tanpa file awal)
@@ -344,8 +498,26 @@ export default function AdminDashboardPage() {
 
       <main className="max-w-7xl mx-auto px-4 py-8 space-y-6">
         
-        {/* Metrics Overview Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+        {/* Navigation Tabs */}
+        <div className="flex items-center gap-2 border-b border-slate-200 pb-2">
+          <button 
+            onClick={() => setActiveTab('registrations')}
+            className={`px-4 py-2 font-bold text-sm rounded-t-lg transition ${activeTab === 'registrations' ? 'bg-[#002B5B] text-white' : 'text-slate-500 hover:bg-slate-100'}`}
+          >
+            Data Pendaftar
+          </button>
+          <button 
+            onClick={() => setActiveTab('schedules')}
+            className={`px-4 py-2 font-bold text-sm rounded-t-lg transition ${activeTab === 'schedules' ? 'bg-[#002B5B] text-white' : 'text-slate-500 hover:bg-slate-100'}`}
+          >
+            Jadwal Assessment
+          </button>
+        </div>
+
+        {activeTab === 'registrations' ? (
+          <>
+            {/* Metrics Overview Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
           <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200/80 flex items-center justify-between">
             <div>
               <span className="text-xs font-semibold text-slate-500 block uppercase">Total Pendaftar</span>
@@ -587,6 +759,161 @@ export default function AdminDashboardPage() {
             </table>
           </div>
         </div>
+          </>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Left: Schedule List & Form */}
+            <div className="lg:col-span-2 space-y-6">
+              {/* Form Buat Jadwal */}
+              <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200/80">
+                <h3 className="font-bold text-sm text-[#002B5B] mb-4 flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-[#FED700]" /> Buat Jadwal Assessment Baru
+                </h3>
+                <form onSubmit={handleCreateSchedule} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Tanggal</label>
+                    <input type="date" name="date" required value={scheduleForm.date} onChange={handleScheduleFormChange} className="w-full p-2 border border-slate-300 rounded-lg text-sm" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Tingkat / Level</label>
+                    <select name="level" required value={scheduleForm.level} onChange={handleScheduleFormChange} className="w-full p-2 border border-slate-300 rounded-lg text-sm">
+                      <option value="kiddy">Kiddy (1-on-1)</option>
+                      <option value="primary">Primary (Classroom)</option>
+                      <option value="secondary">Secondary (Classroom)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Jam Mulai</label>
+                    <input type="time" name="start_time" required value={scheduleForm.start_time} onChange={handleScheduleFormChange} className="w-full p-2 border border-slate-300 rounded-lg text-sm" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Jam Selesai</label>
+                    <input type="time" name="end_time" required value={scheduleForm.end_time} onChange={handleScheduleFormChange} className="w-full p-2 border border-slate-300 rounded-lg text-sm" />
+                  </div>
+                  <div className="md:col-span-2 flex items-end gap-4">
+                    <div className="flex-1">
+                      <label className="block text-xs font-bold text-slate-700 mb-1">Kapasitas Maksimal</label>
+                      <input type="number" name="capacity" min="1" max="10" required disabled={scheduleForm.level === 'kiddy'} value={scheduleForm.capacity} onChange={handleScheduleFormChange} className="w-full p-2 border border-slate-300 rounded-lg text-sm disabled:bg-slate-100" />
+                    </div>
+                    <button type="submit" className="bg-[#293C88] hover:bg-blue-800 text-white font-bold py-2 px-6 rounded-lg text-sm h-[38px] flex items-center justify-center gap-1.5 whitespace-nowrap">
+                      <Plus className="w-4 h-4" /> Simpan
+                    </button>
+                  </div>
+                </form>
+              </div>
+
+              {/* Daftar Jadwal */}
+              <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200/80">
+                <h3 className="font-bold text-sm text-[#002B5B] mb-4">Daftar Jadwal Assessment</h3>
+                <div className="space-y-3">
+                  {schedules.length === 0 ? (
+                    <p className="text-xs text-slate-500">Belum ada jadwal yang dibuat.</p>
+                  ) : (
+                    schedules.map(sched => (
+                      <div 
+                        key={sched.id} 
+                        onClick={() => loadScheduleDetails(sched)}
+                        className={`p-4 rounded-xl border-2 cursor-pointer transition ${selectedSchedule?.id === sched.id ? 'border-[#293C88] bg-blue-50/50' : 'border-slate-200 hover:border-blue-300 bg-white'}`}
+                      >
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <span className="text-[10px] font-extrabold uppercase bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full">
+                              {sched.level}
+                            </span>
+                            <div className="font-bold text-[#002B5B] mt-2 flex items-center gap-1.5">
+                              <Calendar className="w-4 h-4 text-slate-400" /> {sched.date}
+                            </div>
+                            <div className="text-xs text-slate-600 flex items-center gap-1.5 mt-1">
+                              <Clock className="w-3.5 h-3.5 text-slate-400" /> {sched.start_time.substring(0,5)} - {sched.end_time.substring(0,5)}
+                            </div>
+                          </div>
+                          <div className="text-right flex flex-col items-end gap-2">
+                            <span className={`text-xs font-bold px-2.5 py-1 rounded-lg border ${sched.allocated_count >= sched.capacity ? 'bg-rose-50 text-rose-700 border-rose-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'}`}>
+                              Terisi: {sched.allocated_count} / {sched.capacity}
+                            </span>
+                            <button onClick={(e) => { e.stopPropagation(); handleDeleteSchedule(sched.id); }} className="text-xs text-rose-500 hover:text-rose-700 font-semibold flex items-center gap-1 bg-white px-2 py-1 rounded border border-rose-100 shadow-sm transition hover:bg-rose-50">
+                              <Trash2 className="w-3.5 h-3.5" /> Hapus
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Right: Allocation Panel */}
+            <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200/80 self-start sticky top-24">
+              <h3 className="font-bold text-sm text-[#002B5B] mb-4 flex items-center gap-2">
+                <Users className="w-4 h-4 text-[#FED700]" /> Alokasi Siswa
+              </h3>
+              
+              {!selectedSchedule ? (
+                <div className="text-center text-xs text-slate-500 py-8 bg-slate-50 rounded-xl border border-dashed border-slate-300">
+                  Pilih salah satu jadwal di sebelah kiri untuk mengelola alokasi siswa.
+                </div>
+              ) : (
+                <div className="space-y-6 animate-fadeIn">
+                  <div className="bg-blue-50/50 p-3 rounded-xl border border-blue-100">
+                    <div className="text-[10px] font-bold text-slate-500 uppercase mb-1">Jadwal Terpilih</div>
+                    <div className="text-sm font-extrabold text-[#293C88] flex items-center gap-1.5"><Calendar className="w-4 h-4 text-[#FED700]" /> {selectedSchedule.date}</div>
+                    <div className="text-xs text-slate-700 mt-1 flex items-center gap-1.5"><Clock className="w-3.5 h-3.5 text-slate-400" /> {selectedSchedule.start_time.substring(0,5)} - {selectedSchedule.end_time.substring(0,5)} <span className="ml-2 uppercase bg-white px-1.5 py-0.5 rounded border border-slate-200 text-[9px] font-bold">{selectedSchedule.level}</span></div>
+                  </div>
+
+                  <div>
+                    <h4 className="text-xs font-bold text-slate-700 mb-2">Tambahkan Siswa (Belum ada jadwal)</h4>
+                    <div className="flex gap-2">
+                      <select 
+                        className="w-full text-xs p-2 border border-slate-300 rounded-lg bg-white focus:outline-none focus:border-[#293C88]"
+                        onChange={(e) => setStudentToAllocate(e.target.value)}
+                        value={studentToAllocate}
+                      >
+                        <option value="">-- Pilih Siswa --</option>
+                        {unallocatedStudents.map(s => (
+                          <option key={s.id} value={s.id}>{s.child_name} ({s.level_name})</option>
+                        ))}
+                      </select>
+                      <button 
+                        onClick={() => { if(studentToAllocate) handleAllocate(parseInt(studentToAllocate)); setStudentToAllocate(''); }}
+                        disabled={!studentToAllocate || selectedSchedule.allocated_count >= selectedSchedule.capacity}
+                        className="bg-emerald-600 hover:bg-emerald-700 text-white p-2 rounded-lg disabled:opacity-50 transition shadow-sm"
+                        title="Tambahkan ke Jadwal"
+                      >
+                        <UserPlus className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="flex items-center justify-between border-b border-slate-100 pb-2 mb-2">
+                      <h4 className="text-xs font-bold text-slate-700">Daftar Siswa Terjadwal</h4>
+                      <span className="text-[10px] font-extrabold bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">{allocatedStudents.length}/{selectedSchedule.capacity}</span>
+                    </div>
+                    
+                    <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
+                      {allocatedStudents.length === 0 ? (
+                        <p className="text-[11px] text-slate-500 italic p-3 text-center bg-slate-50 rounded-lg border border-slate-100">Belum ada siswa.</p>
+                      ) : (
+                        allocatedStudents.map(s => (
+                          <div key={s.allocation_id} className="flex justify-between items-center p-2.5 bg-slate-50 border border-slate-200 rounded-lg group transition hover:border-[#293C88]/30 hover:shadow-xs">
+                            <div>
+                              <div className="text-xs font-bold text-slate-800">{s.child_name}</div>
+                              <div className="text-[10px] text-slate-500 mt-0.5 flex items-center gap-1"><span className="w-1 h-1 bg-slate-300 rounded-full inline-block"></span> {s.level_name}</div>
+                            </div>
+                            <button onClick={() => handleUnallocate(s.id)} className="text-rose-500 hover:text-white hover:bg-rose-500 p-1.5 bg-white rounded-md border border-rose-200 transition opacity-0 group-hover:opacity-100 shadow-sm" title="Hapus dari jadwal">
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </main>
 
 
