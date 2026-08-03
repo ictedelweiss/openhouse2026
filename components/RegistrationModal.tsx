@@ -10,6 +10,7 @@ interface RegistrationModalProps {
   level: LevelQuota;
   slotNumber: number;
   isTransferMenu?: boolean;
+  isWaitingList?: boolean;
   savedParentSession?: SavedParentSession | null;
   onClose: () => void;
   onSuccess: (parentSessionData: SavedParentSession, childName: string) => void;
@@ -20,6 +21,7 @@ export default function RegistrationModal({
   level,
   slotNumber,
   isTransferMenu = false,
+  isWaitingList = false,
   savedParentSession,
   onClose,
   onSuccess,
@@ -31,8 +33,11 @@ export default function RegistrationModal({
   const [submittedData, setSubmittedData] = useState<{ ticketCode: string } | null>(null);
   const [paymentProofFileName, setPaymentProofFileName] = useState<string | null>(null);
 
+  const isWaiting = isWaitingList || slotNumber === 0;
+
   const [formData, setFormData] = useState<Omit<RegistrationFormData, 'level_id' | 'slot_number'>>({
-    registration_type: isTransferMenu ? 'transfer' : 'new',
+    registration_type: isWaiting ? 'waiting_list' : (isTransferMenu ? 'transfer' : 'new'),
+    is_waiting_list: isWaiting,
     child_name: '',
     birth_date: '',
     gender: 'L',
@@ -40,8 +45,8 @@ export default function RegistrationModal({
     whatsapp: savedParentSession?.whatsapp || '',
     email: savedParentSession?.email || '',
     school_origin: '',
-    attendance_session: 'Sabtu, 15 Agustus 2026 (08.00 - 10.00)',
-    payment_method: 'pay_now',
+    attendance_session: isWaiting ? 'Waiting List' : 'Sabtu, 15 Agustus 2026 (08.00 - 10.00)',
+    payment_method: isWaiting ? 'waiting' : 'pay_now',
     payment_proof: null
   });
 
@@ -58,9 +63,13 @@ export default function RegistrationModal({
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setErrorMessage(null);
+    let value = e.target.value;
+    if (e.target.name === 'whatsapp') {
+      value = value.replace(/\D/g, ''); // Number only filter
+    }
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [e.target.name]: value
     });
   };
 
@@ -222,7 +231,7 @@ export default function RegistrationModal({
       <div className="bg-white rounded-3xl max-w-2xl w-full shadow-2xl border border-slate-100 overflow-hidden relative">
         
         {/* Header Modal */}
-        <div className={`p-6 text-white relative ${slotNumber === 0 ? 'bg-gradient-to-r from-amber-600 to-amber-700' : (isTransferMenu ? 'bg-gradient-to-r from-amber-600 to-amber-800' : 'bg-[#293C88]')}`}>
+        <div className={`p-6 text-white relative ${isWaiting ? 'bg-gradient-to-r from-amber-600 to-amber-700' : (isTransferMenu ? 'bg-gradient-to-r from-amber-600 to-amber-800' : 'bg-[#293C88]')}`}>
           <button
             onClick={onClose}
             className="absolute top-5 right-5 text-white/80 hover:text-white bg-white/10 hover:bg-white/20 p-2 rounded-full transition"
@@ -232,14 +241,14 @@ export default function RegistrationModal({
           
           <div className="flex items-center gap-2 mb-1">
             <span className="bg-[#FED700] text-[#293C88] text-[11px] font-extrabold uppercase px-2.5 py-0.5 rounded-full flex items-center gap-1">
-              {slotNumber === 0 ? 'WAITING LIST' : (isTransferMenu ? 'JALUR PINDAHAN' : 'SISWA BARU')}
+              {isWaiting ? 'WAITING LIST' : (isTransferMenu ? 'JALUR PINDAHAN' : 'SISWA BARU')}
             </span>
             <span className="text-xs text-white/90">
-              {slotNumber === 0 ? <strong className="text-amber-200">Kuota Penuh — Pendaftaran Antrean</strong> : <>Sisa Kuota: <strong>{level.available} Kursi</strong></>}
+              {isWaiting ? <strong className="text-amber-200">Kuota Penuh — Pendaftaran Antrean</strong> : <>Sisa Kuota: <strong>{level.available} Kursi</strong></>}
             </span>
           </div>
           <h2 className="text-xl sm:text-2xl font-bold font-poppins text-white">
-            {slotNumber === 0 ? `Pendaftaran Waiting List - ${level.code}` : `Form Pendaftaran ${level.code}`}
+            {isWaiting ? `Pendaftaran Waiting List - ${level.code}` : `Form Pendaftaran ${level.code}`}
           </h2>
           <p className="text-xs text-white/90 mt-1">
             Program: <strong className="text-[#FED700]">{level.name}</strong>
@@ -253,10 +262,12 @@ export default function RegistrationModal({
               <CheckCircle className="w-10 h-10" />
             </div>
             <h3 className="text-2xl font-bold text-[#002B5B] mb-1 font-poppins">
-              Pendaftaran Berhasil!
+              {isWaiting ? 'Registrasi Waiting List Berhasil!' : 'Pendaftaran Berhasil!'}
             </h3>
             <p className="text-xs text-slate-600 mb-6 max-w-md">
-              Terima kasih! Tiket konfirmasi dan instruksi Open House telah dikirimkan ke email <strong>{formData.email}</strong>.
+              {isWaiting
+                ? <>Terima kasih! Data pendaftaran waiting list Anda telah dicatat. Kami akan menginformasikan update kuota melalui email <strong>{formData.email}</strong> dan WhatsApp.</>
+                : <>Terima kasih! Tiket konfirmasi dan instruksi Open House telah dikirimkan ke email <strong>{formData.email}</strong>.</>}
             </p>
 
             {/* Ticket Card Box */}
@@ -268,9 +279,9 @@ export default function RegistrationModal({
                     <Ticket className="w-4 h-4 text-[#FED700]" /> {submittedData.ticketCode}
                   </div>
                 </div>
-                <div className="bg-[#293C88] text-white px-3 py-1 rounded-lg text-center">
+                <div className={`px-3 py-1 rounded-lg text-center ${isWaiting ? 'bg-amber-500 text-white' : 'bg-[#293C88] text-white'}`}>
                   <div className="text-[9px] uppercase">STATUS</div>
-                  <div className="text-xs font-extrabold text-[#FED700]">TERVERIFIKASI</div>
+                  <div className="text-xs font-extrabold text-[#FED700]">{isWaiting ? 'WAITING LIST' : 'TERVERIFIKASI'}</div>
                 </div>
               </div>
 
@@ -289,7 +300,9 @@ export default function RegistrationModal({
                 </div>
                 <div>
                   <span className="text-slate-400 block">Sesi Kedatangan:</span>
-                  <strong className="text-emerald-700">{formData.attendance_session}</strong>
+                  <strong className={isWaiting ? 'text-amber-700' : 'text-emerald-700'}>
+                    {isWaiting ? 'Waiting List (Menunggu Kuota)' : formData.attendance_session}
+                  </strong>
                 </div>
               </div>
             </div>
@@ -320,6 +333,16 @@ export default function RegistrationModal({
                 <span>
                   Menggunakan data Orang Tua <strong>{savedParentSession.parent_name}</strong> ({savedParentSession.email}) untuk pendaftaran anak berikutnya.
                 </span>
+              </div>
+            )}
+
+            {isWaiting && (
+              <div className="bg-amber-50 border border-amber-300 p-3.5 rounded-xl text-xs text-amber-900 flex items-start gap-2.5 shadow-2xs">
+                <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+                <div>
+                  <strong className="block font-bold">Pendaftaran Antrean (Waiting List)</strong>
+                  Kuota kelas untuk program ini telah terisi penuh. Anda dapat mendaftarkan diri pada antrean. Opsi jadwal dan pembayaran akan diinformasikan jika kuota telah tersedia.
+                </div>
               </div>
             )}
 
@@ -408,11 +431,14 @@ export default function RegistrationModal({
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    No. WhatsApp Aktif *
+                  <label className="block text-xs font-semibold text-slate-700 mb-1 flex items-center justify-between">
+                    <span>No. WhatsApp Aktif *</span>
+                    <span className="text-[10px] text-slate-500 font-normal">Hanya Angka</span>
                   </label>
                   <input
                     type="tel"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
                     name="whatsapp"
                     required
                     value={formData.whatsapp}
@@ -462,135 +488,138 @@ export default function RegistrationModal({
               </div>
             </div>
 
-            {/* SECTION 3: CONFIRM OPEN HOUSE ATTENDANCE (HANYA SABTU, 15 AGUSTUS 2026) */}
-            <div className="bg-amber-50/60 rounded-2xl p-4 border border-amber-200/80 space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="bg-[#FED700] text-[#293C88] text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-md">
-                  OPEN HOUSE ATTENDANCE
-                </span>
-                <span className="text-[10px] font-bold text-amber-900">SELECT SESSION *</span>
-              </div>
+            {/* SECTION 3: CONFIRM OPEN HOUSE ATTENDANCE (DISIMPAN JIKA BUKAN WAITING LIST) */}
+            {!isWaiting && (
+              <div className="bg-amber-50/60 rounded-2xl p-4 border border-amber-200/80 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="bg-[#FED700] text-[#293C88] text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-md">
+                    OPEN HOUSE ATTENDANCE
+                  </span>
+                  <span className="text-[10px] font-bold text-amber-900">SELECT SESSION *</span>
+                </div>
 
-              <h4 className="text-sm font-bold text-[#002B5B]">
-                Confirm Open House Attendance
-              </h4>
-              <p className="text-xs text-slate-600">
-                Please select your preferred arrival time and session for the Open House.
-              </p>
+                <h4 className="text-sm font-bold text-[#002B5B]">
+                  Confirm Open House Attendance
+                </h4>
+                <p className="text-xs text-slate-600">
+                  Please select your preferred arrival time and session for the Open House.
+                </p>
 
-              <div className="space-y-3 pt-1">
-                {/* HANYA JADWAL HARI 2: SABTU, 15 AGUSTUS 2026 */}
-                <div className="bg-white rounded-xl p-3 border border-slate-200">
-                  <div className="text-xs font-bold text-[#002B5B] mb-2 flex items-center gap-1.5">
-                    <Clock className="w-3.5 h-3.5 text-[#293C88]" /> 📅 Sabtu, 15 Agustus 2026
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                    {[
-                      'Sabtu, 15 Agustus 2026 (08.00 - 10.00)',
-                      'Sabtu, 15 Agustus 2026 (10.00 - 12.00)',
-                      'Sabtu, 15 Agustus 2026 (13.00 - 15.00)'
-                    ].map((sessionStr, idx) => {
-                      const label = idx === 0 ? '08.00 - 10.00' : idx === 1 ? '10.00 - 12.00' : '13.00 - 15.00';
-                      return (
-                        <label
-                          key={sessionStr}
-                          className={`p-2.5 rounded-xl border text-xs font-medium cursor-pointer transition flex items-center gap-2 ${formData.attendance_session === sessionStr
-                              ? 'border-[#293C88] bg-blue-50/80 text-[#293C88] font-bold ring-2 ring-[#293C88]/20'
-                              : 'border-slate-200 hover:border-slate-300 text-slate-700 bg-white'
-                            }`}
-                        >
-                          <input
-                            type="radio"
-                            name="attendance_session"
-                            value={sessionStr}
-                            checked={formData.attendance_session === sessionStr}
-                            onChange={handleChange}
-                            className="accent-[#293C88]"
-                          />
-                          <span>{label}</span>
-                        </label>
-                      );
-                    })}
+                <div className="space-y-3 pt-1">
+                  <div className="bg-white rounded-xl p-3 border border-slate-200">
+                    <div className="text-xs font-bold text-[#002B5B] mb-2 flex items-center gap-1.5">
+                      <Clock className="w-3.5 h-3.5 text-[#293C88]" /> 📅 Sabtu, 15 Agustus 2026
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                      {[
+                        'Sabtu, 15 Agustus 2026 (08.00 - 10.00)',
+                        'Sabtu, 15 Agustus 2026 (10.00 - 12.00)',
+                        'Sabtu, 15 Agustus 2026 (13.00 - 15.00)'
+                      ].map((sessionStr, idx) => {
+                        const label = idx === 0 ? '08.00 - 10.00' : idx === 1 ? '10.00 - 12.00' : '13.00 - 15.00';
+                        return (
+                          <label
+                            key={sessionStr}
+                            className={`p-2.5 rounded-xl border text-xs font-medium cursor-pointer transition flex items-center gap-2 ${formData.attendance_session === sessionStr
+                                ? 'border-[#293C88] bg-blue-50/80 text-[#293C88] font-bold ring-2 ring-[#293C88]/20'
+                                : 'border-slate-200 hover:border-slate-300 text-slate-700 bg-white'
+                              }`}
+                          >
+                            <input
+                              type="radio"
+                              name="attendance_session"
+                              value={sessionStr}
+                              checked={formData.attendance_session === sessionStr}
+                              onChange={handleChange}
+                              className="accent-[#293C88]"
+                            />
+                            <span>{label}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
+            )}
 
-            {/* SECTION 4: BOOKING FEE PAYMENT & UPLOAD BUKTI (Rp 500,000) */}
-            <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200 space-y-3">
-              <p className="text-xs text-slate-700 font-medium">
-                To secure these exclusive benefits, please complete the <strong className="text-[#002B5B]">Rp 500,000 booking fee payment</strong>. This investment grants you full access to all our Open House offers.
-              </p>
+            {/* SECTION 4: BOOKING FEE PAYMENT & UPLOAD BUKTI (DISIMPAN JIKA BUKAN WAITING LIST) */}
+            {!isWaiting && (
+              <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200 space-y-3">
+                <p className="text-xs text-slate-700 font-medium">
+                  To secure these exclusive benefits, please complete the <strong className="text-[#002B5B]">Rp 500,000 booking fee payment</strong>. This investment grants you full access to all our Open House offers.
+                </p>
 
-              {/* Opsi Pilihan Pembayaran: Pay Now vs Pay On-site */}
-              <div className="grid grid-cols-2 gap-3 bg-white p-2 rounded-xl border border-slate-200">
-                <label
-                  className={`p-3 rounded-xl border-2 text-xs font-bold cursor-pointer transition flex items-center gap-2 ${formData.payment_method === 'pay_now'
-                      ? 'border-[#293C88] bg-blue-50/80 text-[#293C88]'
-                      : 'border-slate-200 text-slate-600 hover:bg-slate-50'
-                    }`}
-                >
-                  <input
-                    type="radio"
-                    name="payment_method"
-                    value="pay_now"
-                    checked={formData.payment_method === 'pay_now'}
-                    onChange={handleChange}
-                    className="accent-[#293C88]"
-                  />
-                  <span>Pay Now (Transfer)</span>
-                </label>
-
-                <label
-                  className={`p-3 rounded-xl border-2 text-xs font-bold cursor-pointer transition flex items-center gap-2 ${formData.payment_method === 'pay_onsite'
-                      ? 'border-[#293C88] bg-blue-50/80 text-[#293C88]'
-                      : 'border-slate-200 text-slate-600 hover:bg-slate-50'
-                    }`}
-                >
-                  <input
-                    type="radio"
-                    name="payment_method"
-                    value="pay_onsite"
-                    checked={formData.payment_method === 'pay_onsite'}
-                    onChange={handleChange}
-                    className="accent-[#293C88]"
-                  />
-                  <span>Pay On-site (Di Lokasi)</span>
-                </label>
-              </div>
-
-              {/* Form Upload Bukti Pembayaran jika Pay Now dipilih */}
-              {formData.payment_method === 'pay_now' && (
-                <div className="bg-blue-50/70 p-3.5 rounded-xl border border-blue-200/80 space-y-2">
-                  <div className="text-xs text-blue-900 font-semibold flex items-center gap-1">
-                    <CreditCard className="w-4 h-4 text-[#293C88]" /> Rekening Transfer Bank Mandiri: <strong>123-000-9876-543</strong> a.n. Edelweiss Learning Center
-                  </div>
-
-                  <div className="pt-1">
-                    <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center gap-1">
-                      <Upload className="w-3.5 h-3.5 text-[#293C88]" /> Upload Bukti Pembayaran / Transfer
-                    </label>
+                {/* Opsi Pilihan Pembayaran: Pay Now vs Pay On-site */}
+                <div className="grid grid-cols-2 gap-3 bg-white p-2 rounded-xl border border-slate-200">
+                  <label
+                    className={`p-3 rounded-xl border-2 text-xs font-bold cursor-pointer transition flex items-center gap-2 ${formData.payment_method === 'pay_now'
+                        ? 'border-[#293C88] bg-blue-50/80 text-[#293C88]'
+                        : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+                      }`}
+                  >
                     <input
-                      type="file"
-                      accept="image/*,.pdf"
-                      onChange={handleFileUpload}
-                      disabled={uploadingFile}
-                      className="w-full text-xs text-slate-600 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-[#293C88] file:text-white hover:file:bg-[#1d2c68] cursor-pointer disabled:opacity-50"
+                      type="radio"
+                      name="payment_method"
+                      value="pay_now"
+                      checked={formData.payment_method === 'pay_now'}
+                      onChange={handleChange}
+                      className="accent-[#293C88]"
                     />
-                    {uploadingFile && (
-                      <span className="text-[11px] text-blue-600 font-bold block mt-1 animate-pulse">
-                        ⏳ Mengupload file ke server...
-                      </span>
-                    )}
-                    {!uploadingFile && paymentProofFileName && formData.payment_proof && (
-                      <span className="text-[11px] text-emerald-700 font-bold block mt-1">
-                        ✓ File berhasil diupload: {paymentProofFileName}
-                      </span>
-                    )}
-                  </div>
+                    <span>Pay Now (Transfer)</span>
+                  </label>
+
+                  <label
+                    className={`p-3 rounded-xl border-2 text-xs font-bold cursor-pointer transition flex items-center gap-2 ${formData.payment_method === 'pay_onsite'
+                        ? 'border-[#293C88] bg-blue-50/80 text-[#293C88]'
+                        : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+                      }`}
+                  >
+                    <input
+                      type="radio"
+                      name="payment_method"
+                      value="pay_onsite"
+                      checked={formData.payment_method === 'pay_onsite'}
+                      onChange={handleChange}
+                      className="accent-[#293C88]"
+                    />
+                    <span>Pay On-site (Di Lokasi)</span>
+                  </label>
                 </div>
-              )}
-            </div>
+
+                {/* Form Upload Bukti Pembayaran jika Pay Now dipilih */}
+                {formData.payment_method === 'pay_now' && (
+                  <div className="bg-blue-50/70 p-3.5 rounded-xl border border-blue-200/80 space-y-2">
+                    <div className="text-xs text-blue-900 font-semibold flex items-center gap-1">
+                      <CreditCard className="w-4 h-4 text-[#293C88]" /> Rekening Transfer Bank Mandiri: <strong>123-000-9876-543</strong> a.n. Edelweiss Learning Center
+                    </div>
+
+                    <div className="pt-1">
+                      <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center gap-1">
+                        <Upload className="w-3.5 h-3.5 text-[#293C88]" /> Upload Bukti Pembayaran / Transfer
+                      </label>
+                      <input
+                        type="file"
+                        accept="image/*,.pdf"
+                        onChange={handleFileUpload}
+                        disabled={uploadingFile}
+                        className="w-full text-xs text-slate-600 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-[#293C88] file:text-white hover:file:bg-[#1d2c68] cursor-pointer disabled:opacity-50"
+                      />
+                      {uploadingFile && (
+                        <span className="text-[11px] text-blue-600 font-bold block mt-1 animate-pulse">
+                          ⏳ Mengupload file ke server...
+                        </span>
+                      )}
+                      {!uploadingFile && paymentProofFileName && formData.payment_proof && (
+                        <span className="text-[11px] text-emerald-700 font-bold block mt-1">
+                          ✓ File berhasil diupload: {paymentProofFileName}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Cloudflare Turnstile Verified SSL Badge */}
             <div className="bg-[#002B5B] text-white p-3 rounded-xl flex items-center justify-between text-xs font-semibold">
@@ -615,10 +644,19 @@ export default function RegistrationModal({
               <button
                 type="submit"
                 disabled={loading}
-                className={`w-2/3 py-3.5 px-4 rounded-xl font-extrabold text-sm transition shadow-lg flex items-center justify-center gap-2 ${isTransferMenu ? 'bg-amber-500 hover:bg-amber-600 text-white' : 'bg-[#FED700] hover:bg-[#e5c200] text-[#293C88]'
-                  }`}
+                className={`w-2/3 py-3.5 px-4 rounded-xl font-extrabold text-sm transition shadow-lg flex items-center justify-center gap-2 ${
+                  isWaiting
+                    ? 'bg-amber-500 hover:bg-amber-600 text-white'
+                    : isTransferMenu
+                    ? 'bg-amber-500 hover:bg-amber-600 text-white'
+                    : 'bg-[#FED700] hover:bg-[#e5c200] text-[#293C88]'
+                }`}
               >
-                {loading ? 'Menyimpan Registration...' : 'SUBMIT REGISTRATION'}
+                {loading
+                  ? 'Menyimpan Registration...'
+                  : isWaiting
+                  ? 'KIRIM PENDAFTARAN WAITING LIST'
+                  : 'SUBMIT REGISTRATION'}
               </button>
             </div>
           </form>

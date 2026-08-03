@@ -39,8 +39,8 @@ const INITIAL_MOCK_LEVELS: LevelQuota[] = [
   },
   {
     id: 'fs-k1',
-    code: 'K1',
-    name: 'Edelweiss Formal School - K1 / TK A (Preschool)',
+    code: 'Kindergarten',
+    name: 'Edelweiss Formal School - Kindergarten A (Preschool)',
     category: 'formal',
     quota: 40,
     booked: 6,
@@ -53,8 +53,8 @@ const INITIAL_MOCK_LEVELS: LevelQuota[] = [
   },
   {
     id: 'fs-k2',
-    code: 'K2',
-    name: 'Edelweiss Formal School - K2 / TK B (Preschool)',
+    code: 'Kindergarten',
+    name: 'Edelweiss Formal School - Kindergarten B (Preschool)',
     category: 'formal',
     quota: 40,
     booked: 5,
@@ -440,7 +440,7 @@ export default function OpenHousePage() {
             </h2>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {/* Opsi 1: Edelweiss Formal School */}
             <button
               onClick={() => handleCategorySelect('formal')}
@@ -456,7 +456,7 @@ export default function OpenHousePage() {
                 </div>
                 <div>
                   <div className="font-bold text-sm text-[#002B5B]">Edelweiss Formal School</div>
-                  <div className="text-[11px] text-slate-500">Preschool, Primary 1, Secondary 1</div>
+                  <div className="text-[11px] text-slate-500">Preschool, Kindergarten, Primary 1, Sec 1</div>
                 </div>
               </div>
               <div className="text-[11px] font-semibold text-[#293C88] flex items-center justify-between pt-2 border-t border-slate-100">
@@ -488,30 +488,6 @@ export default function OpenHousePage() {
                 <ChevronRight className="w-4 h-4" />
               </div>
             </button>
-
-            {/* Opsi 3: Menu Siswa Pindahan */}
-            <button
-              onClick={() => handleCategorySelect('transfer')}
-              className={`p-4 rounded-xl border-2 text-left transition-all flex flex-col justify-between ${
-                selectedCategory === 'transfer'
-                  ? 'border-amber-500 bg-amber-50/80 shadow-sm'
-                  : 'border-slate-200 hover:border-slate-300 bg-white'
-              }`}
-            >
-              <div className="flex items-center gap-3 mb-2">
-                <div className={`p-2.5 rounded-xl ${selectedCategory === 'transfer' ? 'bg-amber-600 text-white' : 'bg-amber-100 text-amber-700'}`}>
-                  <ArrowRightLeft className="w-5 h-5" />
-                </div>
-                <div>
-                  <div className="font-bold text-sm text-amber-900">Siswa Pindahan</div>
-                  <div className="text-[11px] text-amber-700">Lanjutan Sekolah Asal</div>
-                </div>
-              </div>
-              <div className="text-[11px] font-semibold text-amber-800 flex items-center justify-between pt-2 border-t border-amber-100">
-                <span>Preschool, Primary 2-6, Sec 1-3</span>
-                <ChevronRight className="w-4 h-4" />
-              </div>
-            </button>
           </div>
         </div>
 
@@ -526,7 +502,6 @@ export default function OpenHousePage() {
                 Langkah 2: Klik Kelas Untuk Langsung mendaftar (
                 {selectedCategory === 'formal' && 'Edelweiss Formal School'}
                 {selectedCategory === 'homeschooling' && 'Academia Home Schooling'}
-                {selectedCategory === 'transfer' && 'Menu Siswa Pindahan'}
                 )
               </h2>
             </div>
@@ -547,9 +522,7 @@ export default function OpenHousePage() {
                   className={`p-4 rounded-2xl border-2 text-left transition-all relative group flex flex-col justify-between ${
                     isFull
                       ? 'border-amber-300 bg-amber-50/70 hover:bg-amber-100/80 shadow-xs hover:shadow-md hover:-translate-y-0.5'
-                      : (selectedCategory === 'transfer'
-                          ? 'border-amber-200 hover:border-amber-500 bg-amber-50/40 hover:bg-amber-50 shadow-xs hover:shadow-md hover:-translate-y-0.5'
-                          : 'border-blue-100 hover:border-[#293C88] bg-slate-50/70 hover:bg-blue-50/60 shadow-xs hover:shadow-md hover:-translate-y-0.5')
+                      : 'border-blue-100 hover:border-[#293C88] bg-slate-50/70 hover:bg-blue-50/60 shadow-xs hover:shadow-md hover:-translate-y-0.5'
                   }`}
                 >
                   <div>
@@ -618,6 +591,7 @@ export default function OpenHousePage() {
           level={activeLevelObj}
           slotNumber={selectedSlot.slotNumber}
           isTransferMenu={selectedCategory === 'transfer'}
+          isWaitingList={activeLevelObj.available <= 0 || selectedSlot.slotNumber === 0}
           savedParentSession={parentSession}
           onClose={() => {
             setSelectedSlot(null);

@@ -19,7 +19,8 @@ export interface LevelQuota {
 export interface RegistrationFormData {
   level_id: string;
   slot_number: number;
-  registration_type: 'new' | 'transfer';
+  registration_type: 'new' | 'transfer' | 'waiting_list';
+  is_waiting_list?: boolean;
   child_name: string;
   birth_date: string; // HTML5 date string (YYYY-MM-DD)
   gender: 'L' | 'P';
@@ -28,7 +29,7 @@ export interface RegistrationFormData {
   email: string; // Mandatory
   school_origin: string;
   attendance_session: string; // e.g. "Hari 1: Sabtu, 8 Agustus 2026 (08.00 - 10.00)"
-  payment_method: 'pay_now' | 'pay_onsite';
+  payment_method: 'pay_now' | 'pay_onsite' | 'waiting';
   payment_proof?: string | null; // Base64 atau URL file bukti bayar
 }
 
