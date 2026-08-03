@@ -170,10 +170,14 @@ export default function RegistrationModal({
     }
 
     try {
+      const isWaiting = isWaitingList || slotNumber === 0;
       const payload: RegistrationFormData = {
         level_id: level.id,
         slot_number: slotNumber,
-        ...formData
+        ...formData,
+        attendance_session: formData.attendance_session || 'Waiting List (Antrean Kuota)',
+        payment_method: isWaiting ? 'pay_onsite' : formData.payment_method,
+        registration_type: isWaiting ? 'new' : formData.registration_type
       };
 
       const res = await fetch(`${apiBaseUrl}?action=register`, {
