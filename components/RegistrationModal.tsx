@@ -181,7 +181,7 @@ export default function RegistrationModal({
           ? formData.attendance_session 
           : defaultSession,
         payment_method: isWaiting ? 'pay_onsite' : (formData.payment_method || 'pay_now'),
-        registration_type: isWaiting ? 'new' : (formData.registration_type || 'new')
+        registration_type: isWaiting ? 'waiting_list' : (formData.registration_type || 'new')
       };
 
       const res = await fetch(`${apiBaseUrl}?action=register`, {
