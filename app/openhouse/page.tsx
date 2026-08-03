@@ -39,8 +39,8 @@ const INITIAL_MOCK_LEVELS: LevelQuota[] = [
   },
   {
     id: 'fs-k1',
-    code: 'Kindergarten',
-    name: 'Edelweiss Formal School - Kindergarten A (Preschool)',
+    code: 'Kindergarten 1',
+    name: 'Edelweiss Formal School - Kindergarten 1 (Preschool)',
     category: 'formal',
     quota: 40,
     booked: 6,
@@ -53,8 +53,8 @@ const INITIAL_MOCK_LEVELS: LevelQuota[] = [
   },
   {
     id: 'fs-k2',
-    code: 'Kindergarten',
-    name: 'Edelweiss Formal School - Kindergarten B (Preschool)',
+    code: 'Kindergarten 2',
+    name: 'Edelweiss Formal School - Kindergarten 2 (Preschool)',
     category: 'formal',
     quota: 40,
     booked: 5,
@@ -314,9 +314,26 @@ export default function OpenHousePage() {
     fetchQuotaData();
   }, []);
 
-  const availableClassesInCategory = levels.filter(
-    (lvl) => lvl.category === selectedCategory
-  );
+const FIXED_LEVEL_ORDER = [
+  'fs-kiddy1',
+  'fs-kiddy2',
+  'fs-k1',
+  'fs-k2',
+  'fs-p1',
+  'fs-s1',
+  'hs-p1',
+  'hs-ls1',
+  'hs-us1'
+];
+
+  const availableClassesInCategory = levels
+    .filter((lvl) => lvl.category === selectedCategory)
+    .sort((a, b) => {
+      const idxA = FIXED_LEVEL_ORDER.indexOf(a.id);
+      const idxB = FIXED_LEVEL_ORDER.indexOf(b.id);
+      if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+      return a.id.localeCompare(b.id);
+    });
 
   const activeLevelObj = selectedLevelId
     ? levels.find((l) => l.id === selectedLevelId)

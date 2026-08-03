@@ -74,8 +74,8 @@ INSERT INTO admins (username, password, name) VALUES ('admin', 'admin123', 'Admi
 INSERT INTO levels (id, code, name, category, quota) VALUES
 ('fs-kiddy1', 'Kiddy 1', 'Edelweiss Formal School - Kiddy 1 (Preschool)', 'formal', 20),
 ('fs-kiddy2', 'Kiddy 2', 'Edelweiss Formal School - Kiddy 2 (Preschool)', 'formal', 25),
-('fs-k1', 'K1', 'Edelweiss Formal School - K1 / TK A (Preschool)', 'formal', 40),
-('fs-k2', 'K2', 'Edelweiss Formal School - K2 / TK B (Preschool)', 'formal', 40),
+('fs-k1', 'Kindergarten 1', 'Edelweiss Formal School - Kindergarten 1 (Preschool)', 'formal', 40),
+('fs-k2', 'Kindergarten 2', 'Edelweiss Formal School - Kindergarten 2 (Preschool)', 'formal', 40),
 ('fs-p1', 'Primary 1', 'Edelweiss Formal School - Primary 1 (Kelas 1 SD)', 'formal', 40),
 ('fs-s1', 'Secondary 1', 'Edelweiss Formal School - Secondary 1 (Kelas 7 SMP)', 'formal', 30),
 ('hs-p1', 'Primary 1 (HS)', 'Edelweiss Academia Home Schooling - Primary 1', 'homeschooling', 10),

@@ -198,7 +198,7 @@ if ($action === 'get_data' && $_SERVER['REQUEST_METHOD'] === 'GET') {
                 (SELECT COUNT(*) FROM registrations r WHERE r.level_id = l.id AND r.slot_number = 0) as waiting_count
               FROM levels l
               LEFT JOIN slots s ON l.id = s.level_id
-              ORDER BY l.category ASC, l.id ASC, s.slot_number ASC";
+              ORDER BY FIELD(l.id, 'fs-kiddy1', 'fs-kiddy2', 'fs-k1', 'fs-k2', 'fs-p1', 'fs-s1', 'hs-p1', 'hs-ls1', 'hs-us1'), s.slot_number ASC";
               
     $result = $conn->query($query);
     
