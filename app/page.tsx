@@ -36,8 +36,8 @@ export default function LinktreeHomePage() {
         {/* Header / Brand Profile Section */}
         <div className="text-center space-y-3">
           <div className="inline-block relative">
-            <div className="w-20 h-20 sm:w-24 sm:h-24 bg-[#002B5B] text-[#FED700] rounded-full p-4 shadow-md flex items-center justify-center mx-auto border-4 border-white">
-              <School className="w-10 h-10 sm:w-12 sm:h-12" />
+            <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full p-1 shadow-md flex items-center justify-center mx-auto border-4 border-white bg-white overflow-hidden">
+              <img src="/logo-square.png" alt="Edelweiss School Logo" className="w-full h-full object-contain p-2" />
             </div>
           </div>
 
@@ -46,8 +46,8 @@ export default function LinktreeHomePage() {
               <Sparkles className="w-3.5 h-3.5 text-[#293C88]" /> Portal Pendaftaran Resmi
             </span>
 
-            <h1 className="text-xl sm:text-2xl font-extrabold text-[#002B5B] tracking-tight font-poppins">
-              Edelweiss Learning Center
+            <h1 className="text-xl sm:text-2xl font-extrabold text-[#002B5B] tracking-tight font-poppins mt-2">
+              Edelweiss School
             </h1>
 
             <p className="text-xs text-slate-500 font-inter max-w-xs mx-auto mt-1 leading-relaxed">
@@ -78,7 +78,7 @@ export default function LinktreeHomePage() {
             </div>
 
             <p className="text-xs text-slate-600 font-inter leading-relaxed">
-              Ikuti <strong>School Tour</strong> &amp; pengenalan fasilitas lingkungan belajar Edelweiss sebelum Open House Utama.
+              Ikuti <strong>School Tour</strong> &amp; pengenalan fasilitas lingkungan belajar Edelweiss School sebelum Open House Utama.
             </p>
 
             {/* Tombol Aksi Utama Pra Open House */}
@@ -229,7 +229,7 @@ export default function LinktreeHomePage() {
 
       {/* Clean Footer Copyright */}
       <footer className="w-full text-center py-4 border-t border-slate-200 text-[11px] text-slate-400 font-inter">
-        &copy; 2026 Edelweiss Learning Center. All rights reserved.
+        &copy; 2026 Edelweiss School. All rights reserved.
       </footer>
 
     </div>

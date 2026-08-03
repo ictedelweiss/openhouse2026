@@ -64,10 +64,9 @@ export default function AdminLoginPage() {
           <ArrowLeft className="w-4 h-4" /> Kembali ke Halaman Utama
         </a>
 
-        {/* Brand Header */}
         <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-[#293C88] text-[#FED700] rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-lg ring-4 ring-blue-50">
-            <ShieldCheck className="w-9 h-9" />
+          <div className="w-20 h-20 bg-white rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-lg ring-4 ring-blue-50 overflow-hidden">
+            <img src="/logo-square.png" alt="Edelweiss School Logo" className="w-full h-full object-contain p-2" />
           </div>
           <h1 className="text-2xl font-extrabold text-[#002B5B]">
             Admin Panel Login

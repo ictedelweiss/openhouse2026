@@ -23,8 +23,8 @@ export default function AdminNavbar({ adminName = 'Administrator', isLiveDb = fa
         
         {/* Brand & Admin Title */}
         <div className="flex items-center gap-3">
-          <div className="bg-[#FED700] text-[#293C88] p-1.5 rounded-lg font-bold">
-            <ShieldCheck className="w-5 h-5" />
+          <div className="bg-white rounded-lg p-1">
+            <img src="/logo-wide.png" alt="Edelweiss School Logo" className="h-8 object-contain" />
           </div>
           <div>
             <h1 className="text-base font-bold font-poppins text-white leading-tight">
