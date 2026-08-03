@@ -312,11 +312,18 @@ if ($action === 'register' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $whatsapp = isset($input['whatsapp']) ? $conn->real_escape_string($input['whatsapp']) : '';
     $email = isset($input['email']) ? $conn->real_escape_string($input['email']) : '';
     $school_origin = isset($input['school_origin']) ? $conn->real_escape_string($input['school_origin']) : '';
+    $attendance_session = isset($input['attendance_session']) ? $conn->real_escape_string($input['attendance_session']) : '';
     $is_waiting_list = ($slot_number === 0 || $registration_type === 'waiting_list');
     $db_registration_type = in_array($registration_type, ['new', 'transfer']) ? $registration_type : 'new';
     $db_payment_method = in_array($payment_method, ['pay_now', 'pay_onsite']) ? $payment_method : 'pay_onsite';
-    if ($is_waiting_list && empty($attendance_session)) {
-        $attendance_session = 'Waiting List (Antrean Kuota)';
+
+    // Always fallback attendance_session for waiting list
+    if ($is_waiting_list) {
+        if (empty($attendance_session) || $attendance_session === 'Waiting List') {
+            $attendance_session = 'Waiting List (Antrean Kuota)';
+        }
+        // Force safe payment method for waiting list
+        $db_payment_method = 'pay_onsite';
     }
 
     if (empty($level_id) || $slot_number < 0 || empty($child_name) || empty($birth_date) || empty($parent_name) || empty($whatsapp) || empty($email) || empty($attendance_session)) {
