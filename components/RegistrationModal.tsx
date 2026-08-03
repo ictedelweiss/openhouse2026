@@ -171,13 +171,17 @@ export default function RegistrationModal({
 
     try {
       const isWaiting = isWaitingList || slotNumber === 0;
+      const defaultSession = isWaiting ? 'Waiting List (Antrean Kuota)' : 'Sabtu, 15 Agustus 2026 (08.00 - 10.00)';
+      
       const payload: RegistrationFormData = {
         level_id: level.id,
         slot_number: slotNumber,
         ...formData,
-        attendance_session: formData.attendance_session || 'Waiting List (Antrean Kuota)',
-        payment_method: isWaiting ? 'pay_onsite' : formData.payment_method,
-        registration_type: isWaiting ? 'new' : formData.registration_type
+        attendance_session: (formData.attendance_session && formData.attendance_session.trim() !== '') 
+          ? formData.attendance_session 
+          : defaultSession,
+        payment_method: isWaiting ? 'pay_onsite' : (formData.payment_method || 'pay_now'),
+        registration_type: isWaiting ? 'new' : (formData.registration_type || 'new')
       };
 
       const res = await fetch(`${apiBaseUrl}?action=register`, {
