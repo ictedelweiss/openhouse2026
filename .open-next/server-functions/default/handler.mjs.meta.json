@@ -4301,7 +4301,7 @@
       "format": "cjs"
     },
     ".open-next/server-functions/default/.next/server/chunks/ssr/app_admin_dashboard_page_tsx_1_ci_r2._.js": {
-      "bytes": 34428,
+      "bytes": 36885,
       "imports": [],
       "format": "cjs"
     },
@@ -7891,7 +7891,7 @@
           "bytesInOutput": 281
         },
         ".open-next/server-functions/default/.next/server/chunks/ssr/app_admin_dashboard_page_tsx_1_ci_r2._.js": {
-          "bytesInOutput": 34834
+          "bytesInOutput": 37340
         },
         ".open-next/server-functions/default/.next/server/chunks/ssr/node_modules_0uzid5n._.js": {
           "bytesInOutput": 6867
@@ -8152,7 +8152,7 @@
           "bytesInOutput": 59280
         }
       },
-      "bytes": 3259362
+      "bytes": 3261868
     }
   }
 }

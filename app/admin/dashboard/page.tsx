@@ -138,6 +138,7 @@ export default function AdminDashboardPage() {
   const [unallocatedStudents, setUnallocatedStudents] = useState<UnallocatedStudent[]>([]);
   const [allocatedStudents, setAllocatedStudents] = useState<AllocatedStudent[]>([]);
   const [selectedSchedule, setSelectedSchedule] = useState<AssessmentSchedule | null>(null);
+  const [expandedScheduleLevel, setExpandedScheduleLevel] = useState<'kiddy' | 'primary' | 'secondary' | null>('kiddy');
   const [studentToAllocate, setStudentToAllocate] = useState<string>('');
 
   const [scheduleForm, setScheduleForm] = useState({
@@ -899,11 +900,34 @@ export default function AdminDashboardPage() {
               {/* Daftar Jadwal */}
               <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200/80">
                 <h3 className="font-bold text-sm text-[#002B5B] mb-4">Daftar Jadwal Assessment</h3>
-                <div className="space-y-3">
+                
+                {/* Level Tabs */}
+                <div className="flex gap-2 mb-4 border-b border-slate-200 pb-2 overflow-x-auto">
+                  {['kiddy', 'primary', 'secondary'].map((lvl) => (
+                    <button
+                      key={lvl}
+                      onClick={() => setExpandedScheduleLevel(expandedScheduleLevel === lvl ? null : lvl as any)}
+                      className={`px-4 py-2 text-xs font-bold rounded-lg whitespace-nowrap transition ${
+                        expandedScheduleLevel === lvl 
+                          ? 'bg-[#293C88] text-white shadow-sm' 
+                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      }`}
+                    >
+                      {lvl.charAt(0).toUpperCase() + lvl.slice(1)} 
+                      <span className={`ml-1.5 px-1.5 py-0.5 rounded-full text-[10px] ${expandedScheduleLevel === lvl ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-500'}`}>
+                        {schedules.filter(s => s.level === lvl).length}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+
+                <div className="space-y-3 max-h-[500px] overflow-y-auto pr-2">
                   {schedules.length === 0 ? (
-                    <p className="text-xs text-slate-500">Belum ada jadwal yang dibuat.</p>
+                    <p className="text-xs text-slate-500 text-center py-4 bg-slate-50 rounded-xl">Belum ada jadwal yang dibuat.</p>
+                  ) : schedules.filter(s => expandedScheduleLevel ? s.level === expandedScheduleLevel : true).length === 0 ? (
+                    <p className="text-xs text-slate-500 text-center py-4 bg-slate-50 rounded-xl">Tidak ada jadwal untuk jenjang ini.</p>
                   ) : (
-                    schedules.map(sched => (
+                    schedules.filter(s => expandedScheduleLevel ? s.level === expandedScheduleLevel : true).map(sched => (
                       <div 
                         key={sched.id} 
                         onClick={() => loadScheduleDetails(sched)}
