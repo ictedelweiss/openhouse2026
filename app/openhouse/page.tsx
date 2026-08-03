@@ -15,12 +15,13 @@ const INITIAL_MOCK_LEVELS: LevelQuota[] = [
     name: 'Edelweiss Formal School - Kiddy 1 (Preschool)',
     category: 'formal',
     quota: 20,
-    booked: 3,
-    available: 17,
+    booked: 20,
+    available: 0,
+    waitingList: 2,
     slots: Array.from({ length: 20 }, (_, i) => ({
       number: i + 1,
-      status: [1, 4, 8].includes(i + 1) ? 'booked' : 'available',
-      holder: [1, 4, 8].includes(i + 1) ? 'Siswa Terdaftar' : null
+      status: 'booked',
+      holder: `Siswa Terdaftar #${i + 1}`
     }))
   },
   {
