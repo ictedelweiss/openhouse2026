@@ -299,18 +299,7 @@ export default function OpenHousePage() {
       if (res.ok) {
         const json = await res.json();
         if (json.status === 'success' && Array.isArray(json.data) && json.data.length > 0) {
-          const mappedData = json.data.map((lvl: LevelQuota) => {
-            if (lvl.id === 'fs-kiddy1') {
-              return {
-                ...lvl,
-                available: 0,
-                booked: lvl.quota,
-                waitingList: lvl.waitingList || 2
-              };
-            }
-            return lvl;
-          });
-          setLevels(mappedData);
+          setLevels(json.data);
           setIsOnlineBackend(true);
         }
       }
