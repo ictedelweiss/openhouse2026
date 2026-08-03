@@ -416,11 +416,6 @@ const FIXED_LEVEL_ORDER = [
           </div>
 
           <div className="flex items-center gap-3">
-            <div className="text-[11px] text-blue-200 hidden md:flex items-center gap-1">
-              <Database className="w-3.5 h-3.5 text-amber-400" />
-              <span>Status DB: <strong>{isOnlineBackend ? 'Terhubung (phpMyAdmin Live)' : 'Demo Mode'}</strong></span>
-            </div>
-
             <button
               onClick={fetchQuotaData}
               disabled={isRefreshing}

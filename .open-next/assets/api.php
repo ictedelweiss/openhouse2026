@@ -50,7 +50,8 @@ $action = isset($_GET['action']) ? $_GET['action'] : '';
 // ============================
 // HELPER: Handle file upload
 // ============================
-function handleFileUpload($file, $upload_dir, $upload_url_base) {
+function handleFileUpload($file, $upload_dir, $upload_url_base)
+{
     $allowed_types = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf'];
     $max_size = 2 * 1024 * 1024; // 2MB (disesuaikan dengan php_upload_max server)
 
@@ -82,7 +83,8 @@ function handleFileUpload($file, $upload_dir, $upload_url_base) {
 
     $ext = pathinfo($file['name'], PATHINFO_EXTENSION);
     $safe_ext = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $ext));
-    if (empty($safe_ext)) $safe_ext = 'jpg';
+    if (empty($safe_ext))
+        $safe_ext = 'jpg';
 
     $unique_name = 'proof_' . date('Ymd_His') . '_' . bin2hex(random_bytes(4)) . '.' . $safe_ext;
     $dest_path = $upload_dir . $unique_name;
@@ -124,7 +126,7 @@ if ($action === 'debug_upload') {
 if ($action === 'upload_file' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!isset($_FILES['file'])) {
         echo json_encode([
-            'status' => 'error', 
+            'status' => 'error',
             'message' => 'Tidak ada file yang dikirim.',
             'debug_files' => !empty($_FILES) ? array_keys($_FILES) : 'empty',
             'debug_content_type' => $_SERVER['CONTENT_TYPE'] ?? 'not set'
@@ -143,7 +145,7 @@ if ($action === 'upload_file' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 if ($action === 'admin_login' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $raw_input = file_get_contents('php://input');
     $input = json_decode($raw_input, true);
-    
+
     $username = isset($input['username']) ? trim($input['username']) : '';
     $password = isset($input['password']) ? trim($input['password']) : '';
 
@@ -193,15 +195,15 @@ if ($action === 'admin_login' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 if ($action === 'get_data' && $_SERVER['REQUEST_METHOD'] === 'GET') {
     // Single JOIN query to eliminate N+1 query latency
     $query = "SELECT 
-                l.id, l.name, l.code, l.category, l.quota,
-                s.slot_number, s.status as slot_status, s.holder_name,
-                (SELECT COUNT(*) FROM registrations r WHERE r.level_id = l.id AND r.slot_number = 0) as waiting_count
-              FROM levels l
-              LEFT JOIN slots s ON l.id = s.level_id
-              ORDER BY FIELD(l.id, 'fs-kiddy1', 'fs-kiddy2', 'fs-k1', 'fs-k2', 'fs-p1', 'fs-s1', 'hs-p1', 'hs-ls1', 'hs-us1'), s.slot_number ASC";
-              
+                    l.id, l.name, l.code, l.category, l.quota,
+                    s.slot_number, s.status as slot_status, s.holder_name,
+                    (SELECT COUNT(*) FROM registrations r WHERE r.level_id = l.id AND r.slot_number = 0) as waiting_count
+                FROM levels l
+                LEFT JOIN slots s ON l.id = s.level_id
+                ORDER BY FIELD(l.id, 'fs-kiddy1', 'fs-kiddy2', 'fs-k1', 'fs-k2', 'fs-p1', 'fs-s1', 'hs-p1', 'hs-ls1', 'hs-us1'), s.slot_number ASC";
+
     $result = $conn->query($query);
-    
+
     $levels_map = [];
     if ($result && $result->num_rows > 0) {
         while ($row = $result->fetch_assoc()) {
@@ -212,18 +214,18 @@ if ($action === 'get_data' && $_SERVER['REQUEST_METHOD'] === 'GET') {
                     'name' => $row['name'],
                     'code' => $row['code'],
                     'category' => $row['category'],
-                    'quota' => (int)$row['quota'],
+                    'quota' => (int) $row['quota'],
                     'booked' => 0,
-                    'available' => (int)$row['quota'],
-                    'waitingList' => (int)($row['waiting_count'] ?? 0),
+                    'available' => (int) $row['quota'],
+                    'waitingList' => (int) ($row['waiting_count'] ?? 0),
                     'slots' => []
                 ];
             }
-            
+
             if ($row['slot_number'] !== null) {
                 $is_booked = ($row['slot_status'] === 'booked');
                 $levels_map[$id]['slots'][] = [
-                    'number' => (int)$row['slot_number'],
+                    'number' => (int) $row['slot_number'],
                     'status' => $row['slot_status'],
                     'holder' => $row['holder_name']
                 ];
@@ -232,13 +234,13 @@ if ($action === 'get_data' && $_SERVER['REQUEST_METHOD'] === 'GET') {
                 }
             }
         }
-        
+
         // Recalculate available slots
         foreach ($levels_map as &$lvl) {
             $lvl['available'] = max(0, $lvl['quota'] - $lvl['booked']);
         }
     }
-    
+
     echo json_encode(['status' => 'success', 'data' => array_values($levels_map)]);
     exit();
 }
@@ -248,9 +250,9 @@ if ($action === 'get_data' && $_SERVER['REQUEST_METHOD'] === 'GET') {
 // ============================
 if ($action === 'get_registrations' && $_SERVER['REQUEST_METHOD'] === 'GET') {
     $query = "SELECT r.*, l.name as level_name, l.code as level_code, l.category as level_category 
-              FROM registrations r 
-              JOIN levels l ON r.level_id = l.id 
-              ORDER BY r.created_at DESC";
+                FROM registrations r 
+                JOIN levels l ON r.level_id = l.id 
+                ORDER BY r.created_at DESC";
     $result = $conn->query($query);
 
     $registrations = [];
@@ -270,14 +272,14 @@ if ($action === 'get_registrations' && $_SERVER['REQUEST_METHOD'] === 'GET') {
 if ($action === 'register' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $raw_input = file_get_contents('php://input');
     $input = json_decode($raw_input, true);
-    
+
     if (!$input) {
         echo json_encode(['status' => 'error', 'message' => 'Invalid JSON input']);
         exit();
     }
-    
+
     $level_id = isset($input['level_id']) ? $conn->real_escape_string($input['level_id']) : '';
-    $slot_number = isset($input['slot_number']) ? (int)$input['slot_number'] : 0;
+    $slot_number = isset($input['slot_number']) ? (int) $input['slot_number'] : 0;
     $registration_type = isset($input['registration_type']) ? $conn->real_escape_string($input['registration_type']) : 'new';
     $child_name = isset($input['child_name']) ? $conn->real_escape_string($input['child_name']) : '';
     $birth_date = isset($input['birth_date']) ? $conn->real_escape_string($input['birth_date']) : '';
@@ -296,9 +298,12 @@ if ($action === 'register' && $_SERVER['REQUEST_METHOD'] === 'POST') {
                 $data = base64_decode($parts[1]);
 
                 $ext = 'jpg';
-                if (strpos($meta, 'png') !== false) $ext = 'png';
-                else if (strpos($meta, 'webp') !== false) $ext = 'webp';
-                else if (strpos($meta, 'pdf') !== false) $ext = 'pdf';
+                if (strpos($meta, 'png') !== false)
+                    $ext = 'png';
+                else if (strpos($meta, 'webp') !== false)
+                    $ext = 'webp';
+                else if (strpos($meta, 'pdf') !== false)
+                    $ext = 'pdf';
 
                 $file_name = 'proof_' . date('Ymd_His') . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
                 $file_path = $upload_dir . $file_name;
@@ -371,15 +376,15 @@ if ($action === 'upload_payment_proof' && $_SERVER['REQUEST_METHOD'] === 'POST')
     // Support both: FormData with file, or JSON with file_url
     if (isset($_FILES['file']) && isset($_POST['id'])) {
         // FormData upload with actual file
-        $reg_id = (int)$_POST['id'];
-        
+        $reg_id = (int) $_POST['id'];
+
         if ($reg_id <= 0) {
             echo json_encode(['status' => 'error', 'message' => 'ID Pendaftaran tidak valid.']);
             exit();
         }
 
         $upload_result = handleFileUpload($_FILES['file'], $upload_dir, $upload_url_base);
-        
+
         if ($upload_result['status'] !== 'success') {
             echo json_encode($upload_result);
             exit();
@@ -388,7 +393,7 @@ if ($action === 'upload_payment_proof' && $_SERVER['REQUEST_METHOD'] === 'POST')
         $file_url = $upload_result['file_url'];
         $upd = $conn->prepare("UPDATE registrations SET payment_proof = ? WHERE id = ?");
         $upd->bind_param("si", $file_url, $reg_id);
-        
+
         if ($upd->execute()) {
             echo json_encode([
                 'status' => 'success',
@@ -402,8 +407,8 @@ if ($action === 'upload_payment_proof' && $_SERVER['REQUEST_METHOD'] === 'POST')
         // JSON payload with file_url string
         $raw_input = file_get_contents('php://input');
         $input = json_decode($raw_input, true);
-        
-        $reg_id = isset($input['id']) ? (int)$input['id'] : 0;
+
+        $reg_id = isset($input['id']) ? (int) $input['id'] : 0;
         $payment_proof = isset($input['file_url']) ? $conn->real_escape_string($input['file_url']) : '';
 
         if ($reg_id <= 0 || empty($payment_proof)) {
@@ -428,9 +433,9 @@ if ($action === 'upload_payment_proof' && $_SERVER['REQUEST_METHOD'] === 'POST')
 if ($action === 'delete_registration' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $raw_input = file_get_contents('php://input');
     $input = json_decode($raw_input, true);
-    
-    $reg_id = isset($input['id']) ? (int)$input['id'] : 0;
-    
+
+    $reg_id = isset($input['id']) ? (int) $input['id'] : 0;
+
     if ($reg_id <= 0) {
         echo json_encode(['status' => 'error', 'message' => 'ID Registrasi tidak valid.']);
         exit();
@@ -476,9 +481,9 @@ if ($action === 'delete_registration' && $_SERVER['REQUEST_METHOD'] === 'POST') 
 // ============================
 if ($action === 'get_schedules' && $_SERVER['REQUEST_METHOD'] === 'GET') {
     $query = "SELECT s.*, 
-              (SELECT COUNT(*) FROM assessment_allocations a WHERE a.schedule_id = s.id) as allocated_count 
-              FROM assessment_schedules s 
-              ORDER BY s.date ASC, s.start_time ASC";
+                (SELECT COUNT(*) FROM assessment_allocations a WHERE a.schedule_id = s.id) as allocated_count 
+                FROM assessment_schedules s 
+                ORDER BY s.date ASC, s.start_time ASC";
     $result = $conn->query($query);
     $schedules = [];
     if ($result && $result->num_rows > 0) {
@@ -496,25 +501,27 @@ if ($action === 'get_schedules' && $_SERVER['REQUEST_METHOD'] === 'GET') {
 if ($action === 'create_schedule' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $raw_input = file_get_contents('php://input');
     $input = json_decode($raw_input, true);
-    
+
     $date = $input['date'] ?? '';
     $start_time = $input['start_time'] ?? '';
     $end_time = $input['end_time'] ?? '';
     $level = $input['level'] ?? '';
-    $capacity = isset($input['capacity']) ? (int)$input['capacity'] : 10;
-    
+    $capacity = isset($input['capacity']) ? (int) $input['capacity'] : 10;
+
     if (empty($date) || empty($start_time) || empty($end_time) || empty($level)) {
         echo json_encode(['status' => 'error', 'message' => 'Semua kolom wajib diisi.']);
         exit();
     }
-    
+
     if ($level === 'kiddy') {
         $capacity = 1; // Locked for kiddy
     } else {
-        if ($capacity > 10) $capacity = 10;
-        if ($capacity < 1) $capacity = 1;
+        if ($capacity > 10)
+            $capacity = 10;
+        if ($capacity < 1)
+            $capacity = 1;
     }
-    
+
     $stmt = $conn->prepare("INSERT INTO assessment_schedules (date, start_time, end_time, level, capacity) VALUES (?, ?, ?, ?, ?)");
     $stmt->bind_param("ssssi", $date, $start_time, $end_time, $level, $capacity);
     if ($stmt->execute()) {
@@ -531,8 +538,8 @@ if ($action === 'create_schedule' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 if ($action === 'delete_schedule' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $raw_input = file_get_contents('php://input');
     $input = json_decode($raw_input, true);
-    $id = isset($input['id']) ? (int)$input['id'] : 0;
-    
+    $id = isset($input['id']) ? (int) $input['id'] : 0;
+
     // Check if there are allocations
     $check = $conn->prepare("SELECT COUNT(*) as count FROM assessment_allocations WHERE schedule_id = ?");
     $check->bind_param("i", $id);
@@ -542,7 +549,7 @@ if ($action === 'delete_schedule' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         echo json_encode(['status' => 'error', 'message' => 'Gagal menghapus: Jadwal sudah memiliki siswa yang dialokasikan.']);
         exit();
     }
-    
+
     $stmt = $conn->prepare("DELETE FROM assessment_schedules WHERE id = ?");
     $stmt->bind_param("i", $id);
     if ($stmt->execute()) {
@@ -558,14 +565,14 @@ if ($action === 'delete_schedule' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 // ============================
 if ($action === 'get_unallocated_students' && $_SERVER['REQUEST_METHOD'] === 'GET') {
     $target_level = $_GET['level'] ?? '';
-    
+
     // Base query: get students who are not in assessment_allocations
     $query = "SELECT r.id, r.child_name, r.ticket_code, r.level_id, l.name as level_name 
-              FROM registrations r
-              JOIN levels l ON r.level_id = l.id
-              LEFT JOIN assessment_allocations a ON r.id = a.student_id
-              WHERE a.id IS NULL";
-              
+                FROM registrations r
+                JOIN levels l ON r.level_id = l.id
+                LEFT JOIN assessment_allocations a ON r.id = a.student_id
+                WHERE a.id IS NULL";
+
     $result = $conn->query($query);
     $students = [];
     if ($result && $result->num_rows > 0) {
@@ -580,7 +587,7 @@ if ($action === 'get_unallocated_students' && $_SERVER['REQUEST_METHOD'] === 'GE
             } elseif (strpos($lvl_name, 'secondary') !== false) {
                 $cat = 'secondary';
             }
-            
+
             if ($cat === $target_level || $target_level === '') {
                 $students[] = $row;
             }
@@ -596,15 +603,15 @@ if ($action === 'get_unallocated_students' && $_SERVER['REQUEST_METHOD'] === 'GE
 if ($action === 'allocate_student' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $raw_input = file_get_contents('php://input');
     $input = json_decode($raw_input, true);
-    
-    $schedule_id = isset($input['schedule_id']) ? (int)$input['schedule_id'] : 0;
-    $student_id = isset($input['student_id']) ? (int)$input['student_id'] : 0;
-    
+
+    $schedule_id = isset($input['schedule_id']) ? (int) $input['schedule_id'] : 0;
+    $student_id = isset($input['student_id']) ? (int) $input['student_id'] : 0;
+
     if ($schedule_id <= 0 || $student_id <= 0) {
         echo json_encode(['status' => 'error', 'message' => 'Schedule ID atau Student ID tidak valid.']);
         exit();
     }
-    
+
     $conn->begin_transaction();
     try {
         // Double booking check is handled by UNIQUE KEY unique_student_allocation (student_id), but let's check it directly
@@ -614,26 +621,27 @@ if ($action === 'allocate_student' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($check_student->get_result()->num_rows > 0) {
             throw new Exception('Siswa ini sudah dialokasikan ke jadwal lain.');
         }
-        
+
         // Capacity check
         $check_cap = $conn->prepare("
-            SELECT s.capacity, (SELECT COUNT(*) FROM assessment_allocations a WHERE a.schedule_id = s.id) as allocated_count
-            FROM assessment_schedules s
-            WHERE s.id = ? FOR UPDATE
-        ");
+                SELECT s.capacity, (SELECT COUNT(*) FROM assessment_allocations a WHERE a.schedule_id = s.id) as allocated_count
+                FROM assessment_schedules s
+                WHERE s.id = ? FOR UPDATE
+            ");
         $check_cap->bind_param("i", $schedule_id);
         $check_cap->execute();
         $res = $check_cap->get_result()->fetch_assoc();
-        
-        if (!$res) throw new Exception('Jadwal tidak ditemukan.');
+
+        if (!$res)
+            throw new Exception('Jadwal tidak ditemukan.');
         if ($res['allocated_count'] >= $res['capacity']) {
             throw new Exception('Gagal: Kapasitas jadwal ini sudah penuh.');
         }
-        
+
         $insert = $conn->prepare("INSERT INTO assessment_allocations (schedule_id, student_id) VALUES (?, ?)");
         $insert->bind_param("ii", $schedule_id, $student_id);
         $insert->execute();
-        
+
         $conn->commit();
         echo json_encode(['status' => 'success', 'message' => 'Siswa berhasil dialokasikan.']);
     } catch (Exception $e) {
@@ -649,10 +657,10 @@ if ($action === 'allocate_student' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 if ($action === 'unallocate_student' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $raw_input = file_get_contents('php://input');
     $input = json_decode($raw_input, true);
-    
-    $schedule_id = isset($input['schedule_id']) ? (int)$input['schedule_id'] : 0;
-    $student_id = isset($input['student_id']) ? (int)$input['student_id'] : 0;
-    
+
+    $schedule_id = isset($input['schedule_id']) ? (int) $input['schedule_id'] : 0;
+    $student_id = isset($input['student_id']) ? (int) $input['student_id'] : 0;
+
     $stmt = $conn->prepare("DELETE FROM assessment_allocations WHERE schedule_id = ? AND student_id = ?");
     $stmt->bind_param("ii", $schedule_id, $student_id);
     if ($stmt->execute()) {
@@ -667,19 +675,19 @@ if ($action === 'unallocate_student' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 // 13. GET ALLOCATED STUDENTS FOR SCHEDULE
 // ============================
 if ($action === 'get_allocated_students' && $_SERVER['REQUEST_METHOD'] === 'GET') {
-    $schedule_id = isset($_GET['schedule_id']) ? (int)$_GET['schedule_id'] : 0;
-    
+    $schedule_id = isset($_GET['schedule_id']) ? (int) $_GET['schedule_id'] : 0;
+
     $query = "SELECT r.id, r.child_name, r.ticket_code, r.level_id, l.name as level_name, a.id as allocation_id
-              FROM assessment_allocations a
-              JOIN registrations r ON a.student_id = r.id
-              JOIN levels l ON r.level_id = l.id
-              WHERE a.schedule_id = ?";
-              
+                FROM assessment_allocations a
+                JOIN registrations r ON a.student_id = r.id
+                JOIN levels l ON r.level_id = l.id
+                WHERE a.schedule_id = ?";
+
     $stmt = $conn->prepare($query);
     $stmt->bind_param("i", $schedule_id);
     $stmt->execute();
     $result = $stmt->get_result();
-    
+
     $students = [];
     if ($result && $result->num_rows > 0) {
         while ($row = $result->fetch_assoc()) {
@@ -696,35 +704,36 @@ if ($action === 'get_allocated_students' && $_SERVER['REQUEST_METHOD'] === 'GET'
 if ($action === 'import_schedules' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $raw_input = file_get_contents('php://input');
     $input = json_decode($raw_input, true);
-    
+
     if (!isset($input['schedules']) || !is_array($input['schedules'])) {
         echo json_encode(['status' => 'error', 'message' => 'Format data tidak valid.']);
         exit();
     }
-    
+
     $conn->begin_transaction();
     try {
         $stmt = $conn->prepare("INSERT INTO assessment_schedules (date, start_time, end_time, level, capacity) VALUES (?, ?, ?, ?, ?)");
-        
+
         $inserted_count = 0;
         foreach ($input['schedules'] as $row) {
             $date = $row['tanggal'] ?? '';
             $start_time = $row['jam_mulai'] ?? '';
             $end_time = $row['jam_selesai'] ?? '';
             $level_raw = strtolower(trim($row['tingkat'] ?? ''));
-            
+
             // Skip empty rows
-            if (empty($date) && empty($start_time) && empty($level_raw)) continue;
-            
+            if (empty($date) && empty($start_time) && empty($level_raw))
+                continue;
+
             // Validate required fields
             if (empty($date) || empty($start_time) || empty($end_time) || empty($level_raw)) {
                 throw new Exception('Ada baris data yang belum lengkap (Tanggal, Jam Mulai, Jam Selesai, atau Tingkat).');
             }
-            
+
             // Normalize level and capacity
             $level = 'primary'; // fallback
             $capacity = 10;
-            
+
             if (strpos($level_raw, 'kiddy') !== false || strpos($level_raw, 'kindergarten') !== false || strpos($level_raw, 'tk') !== false || strpos($level_raw, 'k2') !== false || strpos($level_raw, 'k1') !== false) {
                 $level = 'kiddy';
                 $capacity = 1; // Locked for one on one
@@ -735,7 +744,7 @@ if ($action === 'import_schedules' && $_SERVER['REQUEST_METHOD'] === 'POST') {
                 $level = 'primary';
                 $capacity = 10;
             }
-            
+
             // Basic format validation
             if (!preg_match("/^\d{4}-\d{2}-\d{2}$/", $date)) {
                 // Try converting MM/DD/YYYY or DD/MM/YYYY to YYYY-MM-DD
@@ -746,18 +755,18 @@ if ($action === 'import_schedules' && $_SERVER['REQUEST_METHOD'] === 'POST') {
                     throw new Exception("Format tanggal salah: $date. Gunakan YYYY-MM-DD.");
                 }
             }
-            
+
             $stmt->bind_param("ssssi", $date, $start_time, $end_time, $level, $capacity);
             if (!$stmt->execute()) {
                 throw new Exception("Gagal menyimpan jadwal untuk tanggal $date.");
             }
             $inserted_count++;
         }
-        
+
         if ($inserted_count === 0) {
             throw new Exception("Tidak ada data jadwal valid yang ditemukan.");
         }
-        
+
         $conn->commit();
         echo json_encode(['status' => 'success', 'message' => "$inserted_count jadwal berhasil diimpor."]);
     } catch (Exception $e) {
