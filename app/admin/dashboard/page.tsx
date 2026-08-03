@@ -939,7 +939,7 @@ export default function AdminDashboardPage() {
                               {sched.level}
                             </span>
                             <div className="font-bold text-[#002B5B] mt-2 flex items-center gap-1.5">
-                              <Calendar className="w-4 h-4 text-slate-400" /> {sched.date}
+                              <Calendar className="w-4 h-4 text-slate-400" /> {new Date(sched.date + 'T00:00:00').toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
                             </div>
                             <div className="text-xs text-slate-600 flex items-center gap-1.5 mt-1">
                               <Clock className="w-3.5 h-3.5 text-slate-400" /> {sched.start_time.substring(0,5)} - {sched.end_time.substring(0,5)}
