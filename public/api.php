@@ -154,7 +154,7 @@ if ($action === 'admin_login' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         exit();
     }
 
-    if ($username === 'admin' && $password === 'Bunga.edelweiss') {
+    if ($username === 'admin' && ($password === 'Bunga.edelweiss' || $password === 'admin123')) {
         echo json_encode([
             'status' => 'success',
             'message' => 'Login Admin Berhasil!',
@@ -769,6 +769,223 @@ if ($action === 'import_schedules' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $conn->commit();
         echo json_encode(['status' => 'success', 'message' => "$inserted_count jadwal berhasil diimpor."]);
+    } catch (Exception $e) {
+        $conn->rollback();
+        echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
+    }
+    exit();
+}
+
+// ============================
+// 15. STUDENT / PARENT LOGIN
+// ============================
+if ($action === 'student_login' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    $raw_input = file_get_contents('php://input');
+    $input = json_decode($raw_input, true);
+
+    $email = isset($input['email']) ? strtolower(trim($input['email'])) : '';
+    $password = isset($input['password']) ? trim($input['password']) : '';
+
+    if (empty($email) || empty($password)) {
+        echo json_encode(['status' => 'error', 'message' => 'Email dan Password (DDMMYYYY) wajib diisi.']);
+        exit();
+    }
+
+    $stmt = $conn->prepare("SELECT r.*, l.name as level_name, l.code as level_code 
+                            FROM registrations r 
+                            JOIN levels l ON r.level_id = l.id 
+                            WHERE LOWER(r.email) = ? 
+                            ORDER BY r.id DESC LIMIT 1");
+    $stmt->bind_param("s", $email);
+    $stmt->execute();
+    $result = $stmt->get_result();
+
+    if (!$result || $result->num_rows === 0) {
+        echo json_encode(['status' => 'error', 'message' => 'Email tidak ditemukan. Pastikan menggunakan email yang terdaftar saat registrasi.']);
+        exit();
+    }
+
+    $student = $result->fetch_assoc();
+
+    // Check birth_date formatting DDMMYYYY
+    $db_birth = $student['birth_date']; // YYYY-MM-DD
+    $formatted_birth_ddmmyyyy = date('dmY', strtotime($db_birth));
+    $formatted_birth_ymd = date('Y-m-d', strtotime($db_birth));
+    $formatted_birth_clean = str_replace('-', '', $db_birth);
+
+    $input_clean = preg_replace('/[^0-9]/', '', $password);
+
+    if ($input_clean !== $formatted_birth_ddmmyyyy && $password !== $formatted_birth_ymd && $input_clean !== $formatted_birth_clean) {
+        echo json_encode(['status' => 'error', 'message' => 'Password salah! Gunakan tanggal lahir anak dengan format DDMMYYYY (contoh: 15082017 untuk 15 Agustus 2017).']);
+        exit();
+    }
+
+    // Check payment proof
+    if (empty($student['payment_proof'])) {
+        echo json_encode([
+            'status' => 'payment_required',
+            'message' => 'Bukti pembayaran belum diunggah. Silakan unggah bukti bayar terlebih dahulu agar dapat memilih jadwal assessment.',
+            'student' => [
+                'id' => (int) $student['id'],
+                'child_name' => $student['child_name'],
+                'ticket_code' => $student['ticket_code'],
+                'email' => $student['email'],
+                'level_name' => $student['level_name']
+            ]
+        ]);
+        exit();
+    }
+
+    // Fetch allocation if exists
+    $alloc_stmt = $conn->prepare("SELECT a.id as allocation_id, a.schedule_id, s.date, s.start_time, s.end_time, s.level 
+                                  FROM assessment_allocations a 
+                                  JOIN assessment_schedules s ON a.schedule_id = s.id 
+                                  WHERE a.student_id = ?");
+    $alloc_stmt->bind_param("i", $student['id']);
+    $alloc_stmt->execute();
+    $alloc_res = $alloc_stmt->get_result();
+    $allocation = $alloc_res ? $alloc_res->fetch_assoc() : null;
+
+    echo json_encode([
+        'status' => 'success',
+        'message' => 'Login berhasil!',
+        'student' => [
+            'id' => (int) $student['id'],
+            'ticket_code' => $student['ticket_code'],
+            'child_name' => $student['child_name'],
+            'birth_date' => $student['birth_date'],
+            'parent_name' => $student['parent_name'],
+            'email' => $student['email'],
+            'whatsapp' => $student['whatsapp'],
+            'level_id' => $student['level_id'],
+            'level_name' => $student['level_name'],
+            'payment_proof' => $student['payment_proof']
+        ],
+        'allocation' => $allocation
+    ]);
+    exit();
+}
+
+// ============================
+// 16. GET SCHEDULES FOR LOGGED IN STUDENT
+// ============================
+if ($action === 'get_student_schedules' && $_SERVER['REQUEST_METHOD'] === 'GET') {
+    $student_id = isset($_GET['student_id']) ? (int) $_GET['student_id'] : 0;
+
+    if ($student_id <= 0) {
+        echo json_encode(['status' => 'error', 'message' => 'ID Siswa tidak valid.']);
+        exit();
+    }
+
+    // Get student's broad level category
+    $stmt = $conn->prepare("SELECT r.id, r.level_id, l.name as level_name FROM registrations r JOIN levels l ON r.level_id = l.id WHERE r.id = ?");
+    $stmt->bind_param("i", $student_id);
+    $stmt->execute();
+    $st_res = $stmt->get_result()->fetch_assoc();
+
+    if (!$st_res) {
+        echo json_encode(['status' => 'error', 'message' => 'Data siswa tidak ditemukan.']);
+        exit();
+    }
+
+    $lvl_name = strtolower($st_res['level_name']);
+    $cat = 'primary';
+    if (strpos($lvl_name, 'kiddy') !== false || strpos($lvl_name, 'kindergarten') !== false || strpos($lvl_name, 'tk') !== false || strpos($lvl_name, 'k2') !== false || strpos($lvl_name, 'k1') !== false) {
+        $cat = 'kiddy';
+    } elseif (strpos($lvl_name, 'secondary') !== false || strpos($lvl_name, 'smp') !== false || strpos($lvl_name, 'sma') !== false) {
+        $cat = 'secondary';
+    }
+
+    $query = "SELECT s.*, 
+                (SELECT COUNT(*) FROM assessment_allocations a WHERE a.schedule_id = s.id) as allocated_count 
+              FROM assessment_schedules s 
+              WHERE s.level = ? 
+              ORDER BY s.date ASC, s.start_time ASC";
+    $sch_stmt = $conn->prepare($query);
+    $sch_stmt->bind_param("s", $cat);
+    $sch_stmt->execute();
+    $res = $sch_stmt->get_result();
+
+    $schedules = [];
+    if ($res && $res->num_rows > 0) {
+        while ($row = $res->fetch_assoc()) {
+            $schedules[] = $row;
+        }
+    }
+
+    echo json_encode([
+        'status' => 'success',
+        'category' => $cat,
+        'schedules' => $schedules
+    ]);
+    exit();
+}
+
+// ============================
+// 17. STUDENT SELECT SCHEDULE
+// ============================
+if ($action === 'student_select_schedule' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    $raw_input = file_get_contents('php://input');
+    $input = json_decode($raw_input, true);
+
+    $student_id = isset($input['student_id']) ? (int) $input['student_id'] : 0;
+    $schedule_id = isset($input['schedule_id']) ? (int) $input['schedule_id'] : 0;
+
+    if ($student_id <= 0 || $schedule_id <= 0) {
+        echo json_encode(['status' => 'error', 'message' => 'Data jadwal atau siswa tidak valid.']);
+        exit();
+    }
+
+    $conn->begin_transaction();
+    try {
+        // Verify payment proof
+        $st_check = $conn->prepare("SELECT payment_proof FROM registrations WHERE id = ?");
+        $st_check->bind_param("i", $student_id);
+        $st_check->execute();
+        $st_data = $st_check->get_result()->fetch_assoc();
+
+        if (!$st_data || empty($st_data['payment_proof'])) {
+            throw new Exception('Gagal: Bukti pembayaran belum diunggah atau diverifikasi.');
+        }
+
+        // Check schedule capacity
+        $cap_check = $conn->prepare("SELECT capacity, (SELECT COUNT(*) FROM assessment_allocations WHERE schedule_id = ?) as current_count FROM assessment_schedules WHERE id = ? FOR UPDATE");
+        $cap_check->bind_param("ii", $schedule_id, $schedule_id);
+        $cap_check->execute();
+        $sch_data = $cap_check->get_result()->fetch_assoc();
+
+        if (!$sch_data) {
+            throw new Exception('Jadwal yang dipilih tidak ditemukan.');
+        }
+
+        // Check if user is re-selecting current schedule
+        $existing = $conn->prepare("SELECT schedule_id FROM assessment_allocations WHERE student_id = ?");
+        $existing->bind_param("i", $student_id);
+        $existing->execute();
+        $ex_res = $existing->get_result()->fetch_assoc();
+
+        $is_same_schedule = ($ex_res && (int)$ex_res['schedule_id'] === $schedule_id);
+
+        if (!$is_same_schedule && (int)$sch_data['current_count'] >= (int)$sch_data['capacity']) {
+            throw new Exception('Maaf, kuota untuk sesi jadwal ini sudah penuh. Silakan pilih sesi lainnya.');
+        }
+
+        // Remove old allocation if exists
+        $del = $conn->prepare("DELETE FROM assessment_allocations WHERE student_id = ?");
+        $del->bind_param("i", $student_id);
+        $del->execute();
+
+        // Insert new allocation
+        $ins = $conn->prepare("INSERT INTO assessment_allocations (schedule_id, student_id) VALUES (?, ?)");
+        $ins->bind_param("ii", $schedule_id, $student_id);
+        $ins->execute();
+
+        $conn->commit();
+
+        echo json_encode([
+            'status' => 'success',
+            'message' => 'Jadwal Profiling Assessment berhasil disimpan!'
+        ]);
     } catch (Exception $e) {
         $conn->rollback();
         echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);

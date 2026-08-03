@@ -202,26 +202,44 @@ export default function LinktreeHomePage() {
             </p>
 
             {/* Tombol Aksi Utama Open House */}
-            <Link
-              href="/openhouse"
-              className="w-full bg-[#002B5B] hover:bg-[#293C88] text-white font-extrabold py-3 px-4 rounded-xl text-xs transition flex items-center justify-center gap-2 shadow-xs cursor-pointer text-center"
-            >
-              <span>Masuk Pendaftaran Open House</span>
-              <ArrowRight className="w-3.5 h-3.5 text-[#FED700]" />
-            </Link>
+            <div className="space-y-2.5">
+              <Link
+                href="/openhouse"
+                className="w-full bg-[#002B5B] hover:bg-[#293C88] text-white font-extrabold py-3.5 px-4 rounded-xl text-xs transition flex items-center justify-center gap-2 shadow-xs cursor-pointer text-center"
+              >
+                <span>Masuk Pendaftaran Open House</span>
+                <ArrowRight className="w-3.5 h-3.5 text-[#FED700]" />
+              </Link>
+
+              <Link
+                href="/assessment"
+                className="w-full bg-[#FED700] hover:bg-amber-400 text-[#002B5B] font-extrabold py-3.5 px-4 rounded-xl text-xs transition flex items-center justify-center gap-2 shadow-xs cursor-pointer text-center"
+              >
+                <Calendar className="w-4 h-4 text-[#002B5B]" />
+                <span>Portal Profiling Assessment (Orang Tua)</span>
+              </Link>
+            </div>
 
           </div>
 
         </div>
 
-        {/* Footer Admin Link */}
-        <div className="text-center pt-2">
+        {/* Footer Links */}
+        <div className="text-center pt-2 flex items-center justify-center gap-4 text-xs text-slate-400">
+          <Link
+            href="/assessment"
+            className="inline-flex items-center gap-1 hover:text-[#002B5B] transition py-1 px-2 rounded-md"
+          >
+            <Calendar className="w-3.5 h-3.5 text-amber-600" />
+            <span>Jadwal Assessment</span>
+          </Link>
+          <span>•</span>
           <Link
             href="/admin/login"
-            className="inline-flex items-center gap-1 text-xs text-slate-400 hover:text-[#002B5B] transition py-1 px-2 rounded-md"
+            className="inline-flex items-center gap-1 hover:text-[#002B5B] transition py-1 px-2 rounded-md"
           >
             <ShieldCheck className="w-3.5 h-3.5" />
-            <span>Login Panel Admin</span>
+            <span>Login Admin</span>
           </Link>
         </div>
 

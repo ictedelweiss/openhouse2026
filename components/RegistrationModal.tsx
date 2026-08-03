@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { LevelQuota, RegistrationFormData, SavedParentSession } from '@/types/registration';
-import { X, CheckCircle, User, Phone, Mail, GraduationCap, Calendar, Ticket, UserPlus, AlertCircle, ArrowRightLeft, Upload, ShieldCheck, CreditCard, Clock } from 'lucide-react';
+import { X, CheckCircle, User, Phone, Mail, GraduationCap, Calendar, Ticket, UserPlus, AlertCircle, ArrowRightLeft, Upload, ShieldCheck, CreditCard, Clock, ArrowRight } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { API_BASE_URL } from '@/lib/api-config';
 
@@ -307,6 +307,33 @@ export default function RegistrationModal({
                   </strong>
                 </div>
               </div>
+            </div>
+
+            {/* Informasi Penjadwalan Profiling Assessment Mandiri */}
+            <div className="bg-gradient-to-br from-[#293C88]/10 via-blue-50 to-amber-50 p-4 rounded-2xl border border-[#293C88]/20 w-full max-w-md text-left mb-6 shadow-2xs">
+              <div className="flex items-center gap-2 mb-1.5 font-extrabold text-[#293C88] text-xs uppercase tracking-wide">
+                <Calendar className="w-4 h-4 text-amber-500" /> Penjadwalan Profiling Assessment Mandiri
+              </div>
+              <p className="text-xs text-slate-600 mb-2 leading-relaxed">
+                Setelah bukti pembayaran diverifikasi, Anda dapat menjadwalkan Profiling Assessment secara mandiri melalui <strong>Portal Profiling Assessment</strong>:
+              </p>
+              <div className="bg-white/90 p-3 rounded-xl border border-slate-200 text-xs space-y-1.5 shadow-2xs">
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-500">Email Login:</span>
+                  <strong className="text-[#293C88] font-bold">{formData.email}</strong>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-500">Password Login:</span>
+                  <strong className="text-[#293C88] font-bold">DDMMYYYY <span className="font-normal text-slate-400 text-[10px]">(Tgl Lahir Anak)</span></strong>
+                </div>
+              </div>
+              <a
+                href="/assessment"
+                className="mt-3 inline-flex items-center justify-center gap-2 w-full py-2.5 px-3 rounded-xl bg-[#293C88] text-white text-xs font-extrabold hover:bg-[#1d2c68] transition shadow-xs"
+              >
+                <span>Masuk Portal Profiling Assessment</span>
+                <ArrowRight className="w-3.5 h-3.5 text-[#FED700]" />
+              </a>
             </div>
 
             <div className="w-full max-w-md space-y-2">

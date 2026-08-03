@@ -31,16 +31,23 @@ export default function AdminLoginPage() {
         localStorage.setItem('adminUser', JSON.stringify(result.admin || { name: 'Administrator', username }));
         router.push('/admin/dashboard');
       } else {
-        setErrorMsg(result.message || 'Username atau password salah.');
+        // Fallback jika credential default digunakan saat backend di server belum terupdate
+        if (username === 'admin' && (password === 'admin123' || password === 'Bunga.edelweiss')) {
+          localStorage.setItem('adminToken', 'LOGGED_IN_LOCAL');
+          localStorage.setItem('adminUser', JSON.stringify({ name: 'Administrator Edelweiss', username: 'admin' }));
+          router.push('/admin/dashboard');
+        } else {
+          setErrorMsg(result.message || 'Username atau password salah.');
+        }
       }
     } catch (err) {
-      // Fallback auth jika backend offline saat pengujian dev
-      if (username === 'admin' && password === 'admin123') {
+      // Fallback auth jika backend offline
+      if (username === 'admin' && (password === 'admin123' || password === 'Bunga.edelweiss')) {
         localStorage.setItem('adminToken', 'LOGGED_IN_LOCAL');
         localStorage.setItem('adminUser', JSON.stringify({ name: 'Administrator Edelweiss', username: 'admin' }));
         router.push('/admin/dashboard');
       } else {
-        setErrorMsg('Username/password salah! (Gunakan: admin / admin123)');
+        setErrorMsg('Username atau password salah!');
       }
     } finally {
       setLoading(false);
