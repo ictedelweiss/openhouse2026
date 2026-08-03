@@ -4553,7 +4553,7 @@
       "format": "cjs"
     },
     ".open-next/server-functions/default/.next/server/chunks/ssr/app_openhouse_page_tsx_06q1m09._.js": {
-      "bytes": 47309,
+      "bytes": 46841,
       "imports": [],
       "format": "cjs"
     },
@@ -7951,7 +7951,7 @@
           "bytesInOutput": 269
         },
         ".open-next/server-functions/default/.next/server/chunks/ssr/app_openhouse_page_tsx_06q1m09._.js": {
-          "bytesInOutput": 48741
+          "bytesInOutput": 48261
         },
         ".open-next/server-functions/default/.next/server/chunks/ssr/node_modules_07flfw8._.js": {
           "bytesInOutput": 109105
@@ -8170,7 +8170,7 @@
           "bytesInOutput": 59280
         }
       },
-      "bytes": 3369388
+      "bytes": 3368908
     }
   }
 }
