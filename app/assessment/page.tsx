@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { 
   Calendar, 
   Clock, 
@@ -69,6 +70,7 @@ export default function AssessmentPortalPage() {
   const [schedules, setSchedules] = useState<AssessmentSchedule[]>([]);
   const [category, setCategory] = useState<string>('');
   const [paymentRequired, setPaymentRequired] = useState(false);
+  const [confirmModalId, setConfirmModalId] = useState<number | null>(null);
 
   // Restore session from localStorage if present
   useEffect(() => {
@@ -140,6 +142,7 @@ export default function AssessmentPortalPage() {
 
   const handleSelectSchedule = async (scheduleId: number) => {
     if (!student) return;
+    setConfirmModalId(null);
     setSubmitting(scheduleId);
     setErrorMsg(null);
     setSuccessMsg(null);
@@ -221,9 +224,7 @@ export default function AssessmentPortalPage() {
       <header className="border-b border-white/10 bg-slate-950/70 backdrop-blur-md sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2 group">
-            <div className="w-9 h-9 rounded-xl bg-[#FED700] text-[#293C88] flex items-center justify-center font-black text-lg shadow-lg group-hover:scale-105 transition">
-              E
-            </div>
+            <Image src="/logo-square.png" alt="Edelweiss School Logo" width={36} height={36} className="rounded-xl shadow-lg group-hover:scale-105 transition bg-white p-1" />
             <div>
               <h1 className="text-sm font-extrabold text-white leading-tight">Edelweiss Open House</h1>
               <p className="text-[10px] text-slate-400">Portal Profiling Assessment</p>
@@ -479,10 +480,10 @@ export default function AssessmentPortalPage() {
                         key={sch.id}
                         className={`rounded-2xl border p-5 transition-all relative overflow-hidden flex flex-col justify-between ${
                           isSelected
-                            ? 'bg-gradient-to-br from-[#293C88]/40 to-slate-800 border-[#FED700] ring-2 ring-[#FED700]/50 shadow-xl'
+                            ? 'bg-slate-800 border-emerald-500 ring-1 ring-emerald-500/50 shadow-md'
                             : isFull
                             ? 'bg-slate-900/40 border-white/5 opacity-60'
-                            : 'bg-slate-800/70 border-white/10 hover:border-white/30 hover:bg-slate-800'
+                            : 'bg-slate-800/40 border-white/10 hover:border-white/20 hover:bg-slate-800'
                         }`}
                       >
                         {/* Header Badge */}
@@ -515,7 +516,7 @@ export default function AssessmentPortalPage() {
 
                         {/* Action Button */}
                         <button
-                          onClick={() => handleSelectSchedule(sch.id)}
+                          onClick={() => setConfirmModalId(sch.id)}
                           disabled={isFull || submitting === sch.id || isSelected}
                           className={`w-full py-2.5 px-4 rounded-xl font-bold text-xs transition flex items-center justify-center gap-2 ${
                             isSelected
@@ -568,6 +569,37 @@ export default function AssessmentPortalPage() {
       <footer className="border-t border-white/10 py-6 text-center text-xs text-slate-500 bg-slate-950/80 backdrop-blur-md">
         © 2026 Edelweiss Open House — Profiling Assessment Self-Service Portal
       </footer>
+
+      {/* Confirmation Modal */}
+      {confirmModalId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-slate-800 border border-white/10 rounded-3xl p-6 w-full max-w-sm shadow-2xl animate-fadeIn">
+            <div className="flex flex-col items-center text-center space-y-4">
+              <div className="w-16 h-16 rounded-full bg-blue-500/10 text-blue-400 flex items-center justify-center mb-2">
+                <AlertCircle className="w-8 h-8" />
+              </div>
+              <h3 className="text-lg font-bold text-white">Konfirmasi Jadwal</h3>
+              <p className="text-xs text-slate-300">
+                Apakah Anda yakin ingin memilih jadwal ini untuk Profiling Assessment? Pastikan waktu sudah sesuai karena kuota terbatas.
+              </p>
+              <div className="flex items-center gap-3 w-full mt-4">
+                <button
+                  onClick={() => setConfirmModalId(null)}
+                  className="flex-1 py-2.5 rounded-xl bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold transition"
+                >
+                  Batal
+                </button>
+                <button
+                  onClick={() => handleSelectSchedule(confirmModalId)}
+                  className="flex-1 py-2.5 rounded-xl bg-[#FED700] hover:bg-amber-400 text-[#002B5B] text-xs font-bold transition shadow-md"
+                >
+                  Ya, Konfirmasi
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

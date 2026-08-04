@@ -55,71 +55,7 @@ interface AllocatedStudent {
 
 const DUMMY_RECEIPT_IMG = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="550" viewBox="0 0 400 550" fill="%23f8fafc"><rect width="400" height="550" fill="%23ffffff" rx="16" stroke="%23cbd5e1" stroke-width="2"/><text x="200" y="50" font-family="sans-serif" font-size="18" font-weight="bold" fill="%23293c88" text-anchor="middle">BUKTI TRANSFER RESMI</text><text x="200" y="80" font-family="sans-serif" font-size="12" fill="%2364748b" text-anchor="middle">Edelweiss School Open House</text><line x1="40" y1="100" x2="360" y2="100" stroke="%23e2e8f0" stroke-width="2" stroke-dasharray="4"/><text x="50" y="140" font-family="sans-serif" font-size="12" fill="%2364748b">Bank Tujuan:</text><text x="350" y="140" font-family="sans-serif" font-size=\"12\" font-weight="bold" fill="%230f172a" text-anchor="end">Bank Mandiri</text><text x="50" y="180" font-family="sans-serif" font-size="12" fill="%2364748b">Jumlah Transfer:</text><text x="350" y="180" font-family="sans-serif" font-size="16" font-weight="bold" fill="%2316a34a" text-anchor="end">Rp 500.000</text><text x="50" y="220" font-family="sans-serif" font-size="12" fill="%2364748b">Status:</text><text x="350" y="220" font-family="sans-serif" font-size="12" font-weight="bold" fill="%23293c88" text-anchor="end">BERHASIL / VERIFIED</text><rect x="40" y="260" width="320" height="200" fill="%23f1f5f9" rx="12"/><text x="200" y="360" font-family="sans-serif" font-size="14" font-weight="bold" fill="%23002b5b" text-anchor="middle">Struk Bukti Pembayaran Valid</text><text x="200" y="510" font-family="sans-serif" font-size="11" fill="%2394a3b8" text-anchor="middle">Verified by Admin System</text></svg>';
 
-const INITIAL_MOCK_REGISTRATIONS: RegistrationRecord[] = [
-  {
-    id: 1,
-    ticket_code: 'ELC-NEW-P1-01-382',
-    level_id: 'fs-p1',
-    level_name: 'Edelweiss Formal School - Primary 1',
-    level_code: 'Primary 1',
-    level_category: 'formal',
-    slot_number: 1,
-    registration_type: 'new',
-    child_name: 'Rayhan Pratama',
-    birth_date: '2018-05-12',
-    gender: 'L',
-    parent_name: 'Budi Pratama',
-    whatsapp: '081234567890',
-    email: 'budi@gmail.com',
-    school_origin: 'TK Edelweiss',
-    attendance_session: 'Hari 1: Sabtu, 8 Agustus 2026 (08.00 - 10.00)',
-    payment_method: 'pay_now',
-    payment_proof: DUMMY_RECEIPT_IMG,
-    created_at: '2026-07-30 08:30:00'
-  },
-  {
-    id: 2,
-    ticket_code: 'ELC-NEW-P1-02-491',
-    level_id: 'fs-p1',
-    level_name: 'Edelweiss Formal School - Primary 1',
-    level_code: 'Primary 1',
-    level_category: 'formal',
-    slot_number: 2,
-    registration_type: 'new',
-    child_name: 'Aisha Humaira',
-    birth_date: '2018-07-18',
-    gender: 'P',
-    parent_name: 'Siti Rahma',
-    whatsapp: '081987654321',
-    email: 'siti@gmail.com',
-    school_origin: 'TK Melati',
-    attendance_session: 'Hari 1: Sabtu, 8 Agustus 2026 (10.00 - 12.00)',
-    payment_method: 'pay_onsite',
-    payment_proof: null,
-    created_at: '2026-07-30 09:15:00'
-  },
-  {
-    id: 3,
-    ticket_code: 'ELC-TRF-P2-01-102',
-    level_id: 'tr-p2',
-    level_name: 'Siswa Pindahan Primary - Primary 2',
-    level_code: 'Primary 2',
-    level_category: 'transfer',
-    slot_number: 1,
-    registration_type: 'transfer',
-    child_name: 'Kevin Alexander',
-    birth_date: '2017-03-05',
-    gender: 'L',
-    parent_name: 'Alexander',
-    whatsapp: '081122334455',
-    email: 'alex@gmail.com',
-    school_origin: 'SD Nusantara',
-    attendance_session: 'Hari 2: Sabtu, 15 Agustus 2026 (08.00 - 10.00)',
-    payment_method: 'pay_now',
-    payment_proof: DUMMY_RECEIPT_IMG,
-    created_at: '2026-07-30 09:45:00'
-  }
-];
+const INITIAL_MOCK_REGISTRATIONS: RegistrationRecord[] = [];
 
 export default function AdminDashboardPage() {
   const router = useRouter();
@@ -253,6 +189,34 @@ export default function AdminDashboardPage() {
 
   const [isImporting, setIsImporting] = useState(false);
 
+  const handleExportSchedulesCSV = () => {
+    if (schedules.length === 0) {
+      alert('Tidak ada data jadwal untuk di-export.');
+      return;
+    }
+
+    const headers = ['ID Jadwal', 'Tanggal', 'Jam Mulai', 'Jam Selesai', 'Tingkat', 'Kapasitas', 'Terisi', 'Sisa Kuota'];
+    const rows = schedules.map((s) => [
+      s.id,
+      `"${s.date}"`,
+      `"${s.start_time}"`,
+      `"${s.end_time}"`,
+      `"${s.level}"`,
+      s.capacity,
+      s.allocated_count,
+      s.capacity - s.allocated_count
+    ]);
+
+    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `rekap_jadwal_assessment_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const handleDownloadCSVTemplate = () => {
     const csvContent = 'tanggal,jam_mulai,jam_selesai,tingkat\n2026-08-10,08:00,09:00,kiddy\n2026-08-10,09:00,10:00,primary\n2026-08-10,10:00,11:00,secondary';
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -316,16 +280,24 @@ export default function AdminDashboardPage() {
 
   const loadScheduleDetails = async (schedule: AssessmentSchedule) => {
     setSelectedSchedule(schedule);
+    setAllocatedStudents([]);
+    setUnallocatedStudents([]);
     try {
       const [resAlloc, resUnalloc] = await Promise.all([
         fetch(`${API_BASE_URL}?action=get_allocated_students&schedule_id=${schedule.id}`),
         fetch(`${API_BASE_URL}?action=get_unallocated_students&level=${schedule.level}`)
       ]);
-      const jsonAlloc = await resAlloc.json();
-      const jsonUnalloc = await resUnalloc.json();
-      if (jsonAlloc.status === 'success') setAllocatedStudents(jsonAlloc.data);
-      if (jsonUnalloc.status === 'success') setUnallocatedStudents(jsonUnalloc.data);
-    } catch (e) { console.error(e); }
+      if (resAlloc.ok) {
+        const jsonAlloc = await resAlloc.json();
+        if (jsonAlloc.status === 'success') setAllocatedStudents(jsonAlloc.data);
+      }
+      if (resUnalloc.ok) {
+        const jsonUnalloc = await resUnalloc.json();
+        if (jsonUnalloc.status === 'success') setUnallocatedStudents(jsonUnalloc.data);
+      }
+    } catch (e) { 
+      console.warn('Gagal mengambil data detail jadwal dari server.', e);
+    }
   };
 
   const handleAllocate = async (studentId: number) => {
@@ -866,16 +838,22 @@ export default function AdminDashboardPage() {
                 </form>
               </div>
 
-              {/* Import Jadwal CSV */}
+              {/* Import/Export Jadwal CSV */}
               <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200/80">
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                   <div>
                     <h3 className="font-bold text-sm text-[#002B5B] mb-1 flex items-center gap-2">
-                      <Upload className="w-4 h-4 text-[#FED700]" /> Import Jadwal (Excel / CSV)
+                      <Upload className="w-4 h-4 text-[#FED700]" /> Manajemen Data Jadwal
                     </h3>
-                    <p className="text-xs text-slate-500">Buat jadwal sekaligus banyak melalui file CSV.</p>
+                    <p className="text-xs text-slate-500">Buat jadwal baru via CSV atau ekspor rekap jadwal.</p>
                   </div>
-                  <div className="flex gap-2 w-full sm:w-auto">
+                  <div className="flex gap-2 w-full sm:w-auto flex-wrap">
+                    <button
+                      onClick={handleExportSchedulesCSV}
+                      className="px-3 py-2 text-xs font-bold bg-[#293C88] hover:bg-[#002B5B] text-white rounded-lg flex items-center gap-1.5 transition shadow-sm"
+                    >
+                      <Download className="w-3.5 h-3.5" /> Ekspor Data
+                    </button>
                     <button
                       onClick={handleDownloadCSVTemplate}
                       className="px-3 py-2 text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg flex items-center gap-1.5 transition"

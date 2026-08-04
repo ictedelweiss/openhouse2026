@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { 
   School, 
   Calendar, 
@@ -37,7 +38,7 @@ export default function LinktreeHomePage() {
         <div className="text-center space-y-3">
           <div className="inline-block relative">
             <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full p-1 shadow-md flex items-center justify-center mx-auto border-4 border-white bg-white overflow-hidden">
-              <img src="/logo-square.png" alt="Edelweiss School Logo" className="w-full h-full object-contain p-2" />
+              <Image src="/logo-square.png" alt="Edelweiss School Logo" width={112} height={112} className="w-full h-full object-contain p-2" priority />
             </div>
           </div>
 
