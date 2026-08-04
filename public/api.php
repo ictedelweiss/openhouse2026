@@ -961,7 +961,7 @@ if ($action === 'get_student_schedules' && $_SERVER['REQUEST_METHOD'] === 'GET')
     }
 
     // Get student's broad level category
-    $stmt = $conn->prepare("SELECT r.id, r.level_id, l.name as level_name FROM registrations r JOIN levels l ON r.level_id = l.id WHERE r.id = ?");
+    $stmt = $conn->prepare("SELECT r.id, r.level_id, r.payment_proof, r.payment_status, l.name as level_name FROM registrations r JOIN levels l ON r.level_id = l.id WHERE r.id = ?");
     $stmt->bind_param("i", $student_id);
     $stmt->execute();
     $st_res = $stmt->get_result()->fetch_assoc();
@@ -1005,7 +1005,9 @@ if ($action === 'get_student_schedules' && $_SERVER['REQUEST_METHOD'] === 'GET')
     echo json_encode([
         'status' => 'success',
         'category' => $cat,
-        'schedules' => $schedules
+        'schedules' => $schedules,
+        'payment_proof' => $st_res['payment_proof'],
+        'payment_status' => $st_res['payment_status']
     ]);
     exit();
 }

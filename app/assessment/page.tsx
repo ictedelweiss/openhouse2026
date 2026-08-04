@@ -77,10 +77,26 @@ export default function AssessmentPortalPage() {
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        setStudent(parsed.student);
-        setAllocation(parsed.allocation || null);
-        if (parsed.student?.id) {
-          fetchSchedules(parsed.student.id);
+        
+        if (!parsed.student.payment_proof) {
+          setStudent(parsed.student);
+          setPaymentState('required');
+        } else if (parsed.student.payment_status === 'pending') {
+          setStudent(parsed.student);
+          setPaymentState('pending');
+        } else if (parsed.student.payment_status === 'rejected') {
+          setStudent(parsed.student);
+          setPaymentState('rejected');
+        } else if (parsed.student.payment_status === 'verified') {
+          setStudent(parsed.student);
+          setPaymentState('ok');
+          setAllocation(parsed.allocation || null);
+          if (parsed.student?.id) {
+            fetchSchedules(parsed.student.id);
+          }
+        } else {
+          // Old session without payment_status, force re-login
+          localStorage.removeItem('assessment_student_session');
         }
       } catch {
         localStorage.removeItem('assessment_student_session');
@@ -137,8 +153,17 @@ export default function AssessmentPortalPage() {
       const res = await fetch(`${API_BASE_URL}?action=get_student_schedules&student_id=${studentId}`);
       const result = await res.json();
       if (result.status === 'success') {
-        setSchedules(result.schedules || []);
-        setCategory(result.category || '');
+        if (!result.payment_proof) {
+          setPaymentState('required');
+        } else if (result.payment_status === 'pending') {
+          setPaymentState('pending');
+        } else if (result.payment_status === 'rejected') {
+          setPaymentState('rejected');
+        } else {
+          setPaymentState('ok');
+          setSchedules(result.schedules || []);
+          setCategory(result.category || '');
+        }
       }
     } catch (err) {
       console.error('Failed to fetch schedules', err);
