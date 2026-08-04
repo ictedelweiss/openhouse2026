@@ -101,6 +101,45 @@ function handleFileUpload($file, $upload_dir, $upload_url_base)
 }
 
 // ============================
+// HELPER: Send Notification Email
+// ============================
+function sendNotificationEmail($subject, $messageHTML) {
+    $to = 'oh@edelweiss.sch.id';
+    $headers = "MIME-Version: 1.0" . "\r\n";
+    $headers .= "Content-type:text/html;charset=UTF-8" . "\r\n";
+    $headers .= "From: Open House Edelweiss <noreply@eliteacademia.id>" . "\r\n";
+    
+    @mail($to, $subject, $messageHTML, $headers);
+}
+
+// ============================
+// HELPER: Send Async JSON Response
+// ============================
+function sendAsyncJsonResponse($data) {
+    $json = json_encode($data);
+    
+    // Clear all existing output buffers
+    while (ob_get_level() > 0) {
+        ob_end_clean();
+    }
+    
+    header('Connection: close');
+    header('Content-Length: ' . strlen($json));
+    header('Content-Type: application/json; charset=utf-8');
+    
+    echo $json;
+    flush();
+    
+    if (function_exists('fastcgi_finish_request')) {
+        fastcgi_finish_request();
+    }
+    
+    if (session_id()) {
+        session_write_close();
+    }
+}
+
+// ============================
 // DEBUG: Test upload endpoint
 // ============================
 if ($action === 'debug_upload') {
@@ -355,13 +394,61 @@ if ($action === 'register' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $conn->commit();
 
-        echo json_encode([
+        $tipe = $is_waiting_list ? 'Waiting List' : 'Reguler';
+        $emailSubject = "Pendaftaran Baru [$tipe]: " . $ticket_code;
+        $emailBody = "
+        <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #f8fafc; padding: 20px;'>
+            <div style='background-color: #002B5B; padding: 20px; border-radius: 8px 8px 0 0; text-align: center;'>
+                <h2 style='color: #FED700; margin: 0;'>Notifikasi Open House</h2>
+            </div>
+            <div style='background-color: #ffffff; padding: 30px; border-radius: 0 0 8px 8px; border: 1px solid #e2e8f0; border-top: none;'>
+                <h3 style='color: #1e293b; margin-top: 0;'>Pendaftaran Baru Masuk</h3>
+                <p style='color: #475569; line-height: 1.6;'>Terdapat pendaftaran baru yang perlu diverifikasi di sistem Open House dengan rincian sebagai berikut:</p>
+                
+                <table style='width: 100%; border-collapse: collapse; margin-top: 20px; margin-bottom: 20px; font-size: 14px;'>
+                    <tr>
+                        <td style='padding: 12px; border-bottom: 1px solid #e2e8f0; color: #64748b; width: 40%;'>Kode Tiket</td>
+                        <td style='padding: 12px; border-bottom: 1px solid #e2e8f0; color: #1e293b; font-weight: bold;'>$ticket_code</td>
+                    </tr>
+                    <tr>
+                        <td style='padding: 12px; border-bottom: 1px solid #e2e8f0; color: #64748b;'>Tipe Pendaftaran</td>
+                        <td style='padding: 12px; border-bottom: 1px solid #e2e8f0; color: #1e293b; font-weight: bold;'>$tipe</td>
+                    </tr>
+                    <tr>
+                        <td style='padding: 12px; border-bottom: 1px solid #e2e8f0; color: #64748b;'>Nama Anak</td>
+                        <td style='padding: 12px; border-bottom: 1px solid #e2e8f0; color: #1e293b; font-weight: bold;'>$child_name</td>
+                    </tr>
+                    <tr>
+                        <td style='padding: 12px; border-bottom: 1px solid #e2e8f0; color: #64748b;'>Nama Orang Tua</td>
+                        <td style='padding: 12px; border-bottom: 1px solid #e2e8f0; color: #1e293b; font-weight: bold;'>$parent_name</td>
+                    </tr>
+                    <tr>
+                        <td style='padding: 12px; border-bottom: 1px solid #e2e8f0; color: #64748b;'>WhatsApp</td>
+                        <td style='padding: 12px; border-bottom: 1px solid #e2e8f0; color: #1e293b; font-weight: bold;'>$whatsapp</td>
+                    </tr>
+                    <tr>
+                        <td style='padding: 12px; border-bottom: 1px solid #e2e8f0; color: #64748b;'>Email</td>
+                        <td style='padding: 12px; border-bottom: 1px solid #e2e8f0; color: #1e293b; font-weight: bold;'>$email</td>
+                    </tr>
+                </table>
+                
+                <div style='text-align: center; margin-top: 30px;'>
+                    <a href='https://openhouse.edelweiss.sch.id/admin/login' style='background-color: #293C88; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;'>Cek Dashboard Admin</a>
+                </div>
+            </div>
+            <div style='text-align: center; margin-top: 20px; color: #94a3b8; font-size: 12px;'>
+                <p>Email ini dikirim secara otomatis oleh Sistem Pendaftaran Terpadu Open House Edelweiss.</p>
+            </div>
+        </div>";
+        sendAsyncJsonResponse([
             'status' => 'success',
             'message' => $is_waiting_list ? 'Pendaftaran Waiting List berhasil disimpan!' : 'Pendaftaran berhasil disimpan!',
             'ticket_code' => $ticket_code,
             'slot_number' => $slot_number,
             'is_waiting_list' => $is_waiting_list
         ]);
+
+        sendNotificationEmail($emailSubject, $emailBody);
     } catch (Exception $e) {
         $conn->rollback();
         echo json_encode(['status' => 'error', 'message' => 'Gagal menyimpan pendaftaran: ' . $e->getMessage()]);
@@ -835,7 +922,32 @@ if ($action === 'student_login' && $_SERVER['REQUEST_METHOD'] === 'POST') {
                 'child_name' => $student['child_name'],
                 'ticket_code' => $student['ticket_code'],
                 'email' => $student['email'],
-                'level_name' => $student['level_name']
+                'level_name' => $student['level_name'],
+                'payment_status' => $student['payment_status'] ?? 'pending'
+            ]
+        ]);
+        exit();
+    }
+
+    if (!isset($student['payment_status']) || $student['payment_status'] === 'pending') {
+        echo json_encode([
+            'status' => 'payment_pending',
+            'message' => 'Pembayaran Anda sedang diverifikasi oleh admin. Silakan tunggu atau hubungi admin.',
+            'student' => [
+                'id' => (int) $student['id'],
+                'payment_status' => 'pending'
+            ]
+        ]);
+        exit();
+    }
+
+    if ($student['payment_status'] === 'rejected') {
+        echo json_encode([
+            'status' => 'payment_rejected',
+            'message' => 'Bukti pembayaran Anda ditolak. Silakan hubungi admin.',
+            'student' => [
+                'id' => (int) $student['id'],
+                'payment_status' => 'rejected'
             ]
         ]);
         exit();
@@ -916,7 +1028,7 @@ if ($action === 'get_student_schedules' && $_SERVER['REQUEST_METHOD'] === 'GET')
     }
 
     // Get student's broad level category
-    $stmt = $conn->prepare("SELECT r.id, r.level_id, l.name as level_name FROM registrations r JOIN levels l ON r.level_id = l.id WHERE r.id = ?");
+    $stmt = $conn->prepare("SELECT r.id, r.level_id, r.payment_proof, r.payment_status, l.name as level_name FROM registrations r JOIN levels l ON r.level_id = l.id WHERE r.id = ?");
     $stmt->bind_param("i", $student_id);
     $stmt->execute();
     $st_res = $stmt->get_result()->fetch_assoc();
@@ -960,7 +1072,9 @@ if ($action === 'get_student_schedules' && $_SERVER['REQUEST_METHOD'] === 'GET')
     echo json_encode([
         'status' => 'success',
         'category' => $cat,
-        'schedules' => $schedules
+        'schedules' => $schedules,
+        'payment_proof' => $st_res['payment_proof'],
+        'payment_status' => $st_res['payment_status']
     ]);
     exit();
 }
@@ -983,17 +1097,17 @@ if ($action === 'student_select_schedule' && $_SERVER['REQUEST_METHOD'] === 'POS
     $conn->begin_transaction();
     try {
         // Verify payment proof
-        $st_check = $conn->prepare("SELECT payment_proof FROM registrations WHERE id = ?");
+        $st_check = $conn->prepare("SELECT child_name, payment_proof, payment_status FROM registrations WHERE id = ?");
         $st_check->bind_param("i", $student_id);
         $st_check->execute();
         $st_data = $st_check->get_result()->fetch_assoc();
 
-        if (!$st_data || empty($st_data['payment_proof'])) {
-            throw new Exception('Gagal: Bukti pembayaran belum diunggah atau diverifikasi.');
+        if (!$st_data || empty($st_data['payment_proof']) || $st_data['payment_status'] !== 'verified') {
+            throw new Exception('Gagal: Bukti pembayaran belum diunggah atau belum diverifikasi oleh admin.');
         }
 
         // Check schedule capacity
-        $cap_check = $conn->prepare("SELECT capacity, (SELECT COUNT(*) FROM assessment_allocations WHERE schedule_id = ?) as current_count FROM assessment_schedules WHERE id = ? FOR UPDATE");
+        $cap_check = $conn->prepare("SELECT capacity, date, start_time, (SELECT COUNT(*) FROM assessment_allocations WHERE schedule_id = ?) as current_count FROM assessment_schedules WHERE id = ? FOR UPDATE");
         $cap_check->bind_param("ii", $schedule_id, $schedule_id);
         $cap_check->execute();
         $sch_data = $cap_check->get_result()->fetch_assoc();
@@ -1026,13 +1140,152 @@ if ($action === 'student_select_schedule' && $_SERVER['REQUEST_METHOD'] === 'POS
 
         $conn->commit();
 
-        echo json_encode([
+        $st_name = $st_data['child_name'] ?? 'Siswa';
+        $tanggal = $sch_data['date'] ?? '';
+        $jam = $sch_data['start_time'] ?? '';
+        $emailSubject = "Jadwal Assessment Telah Dipilih: " . $st_name;
+        $emailBody = "
+        <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #f8fafc; padding: 20px;'>
+            <div style='background-color: #002B5B; padding: 20px; border-radius: 8px 8px 0 0; text-align: center;'>
+                <h2 style='color: #FED700; margin: 0;'>Notifikasi Open House</h2>
+            </div>
+            <div style='background-color: #ffffff; padding: 30px; border-radius: 0 0 8px 8px; border: 1px solid #e2e8f0; border-top: none;'>
+                <h3 style='color: #1e293b; margin-top: 0;'>Pemilihan Jadwal Assessment</h3>
+                <p style='color: #475569; line-height: 1.6;'>Siswa telah berhasil memilih jadwal Profiling Assessment dengan rincian sebagai berikut:</p>
+                
+                <table style='width: 100%; border-collapse: collapse; margin-top: 20px; margin-bottom: 20px; font-size: 14px;'>
+                    <tr>
+                        <td style='padding: 12px; border-bottom: 1px solid #e2e8f0; color: #64748b; width: 40%;'>Nama Anak</td>
+                        <td style='padding: 12px; border-bottom: 1px solid #e2e8f0; color: #1e293b; font-weight: bold;'>$st_name</td>
+                    </tr>
+                    <tr>
+                        <td style='padding: 12px; border-bottom: 1px solid #e2e8f0; color: #64748b;'>Tanggal Assessment</td>
+                        <td style='padding: 12px; border-bottom: 1px solid #e2e8f0; color: #1e293b; font-weight: bold;'>$tanggal</td>
+                    </tr>
+                    <tr>
+                        <td style='padding: 12px; border-bottom: 1px solid #e2e8f0; color: #64748b;'>Jam Assessment</td>
+                        <td style='padding: 12px; border-bottom: 1px solid #e2e8f0; color: #1e293b; font-weight: bold;'>$jam</td>
+                    </tr>
+                </table>
+                
+                <div style='text-align: center; margin-top: 30px;'>
+                    <a href='https://openhouse.edelweiss.sch.id/admin/login' style='background-color: #293C88; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;'>Cek Dashboard Admin</a>
+                </div>
+            </div>
+            <div style='text-align: center; margin-top: 20px; color: #94a3b8; font-size: 12px;'>
+                <p>Email ini dikirim secara otomatis oleh Sistem Pendaftaran Terpadu Open House Edelweiss.</p>
+            </div>
+        </div>";
+        sendAsyncJsonResponse([
             'status' => 'success',
             'message' => 'Jadwal Profiling Assessment berhasil disimpan!'
         ]);
+
+        sendNotificationEmail($emailSubject, $emailBody);
     } catch (Exception $e) {
         $conn->rollback();
         echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
+    }
+    exit();
+}
+
+// ============================
+// 18. ADMIN MANAGEMENT
+// ============================
+if ($action === 'get_admins' && $_SERVER['REQUEST_METHOD'] === 'GET') {
+    $res = $conn->query("SELECT id, username, name, created_at FROM admins ORDER BY id ASC");
+    $admins = [];
+    if ($res) {
+        while ($row = $res->fetch_assoc()) {
+            $admins[] = $row;
+        }
+    }
+    echo json_encode(['status' => 'success', 'data' => $admins]);
+    exit();
+}
+
+if ($action === 'create_admin' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    $raw_input = file_get_contents('php://input');
+    $input = json_decode($raw_input, true);
+    
+    $username = trim($input['username'] ?? '');
+    $password = trim($input['password'] ?? '');
+    $name = trim($input['name'] ?? '');
+    
+    if(empty($username) || empty($password) || empty($name)) {
+        echo json_encode(['status' => 'error', 'message' => 'Semua field wajib diisi.']);
+        exit();
+    }
+    
+    $check = $conn->prepare("SELECT id FROM admins WHERE username = ?");
+    $check->bind_param("s", $username);
+    $check->execute();
+    if ($check->get_result()->num_rows > 0) {
+        echo json_encode(['status' => 'error', 'message' => 'Username sudah digunakan.']);
+        exit();
+    }
+    
+    $stmt = $conn->prepare("INSERT INTO admins (username, password, name) VALUES (?, ?, ?)");
+    $stmt->bind_param("sss", $username, $password, $name);
+    if($stmt->execute()) {
+        echo json_encode(['status' => 'success', 'message' => 'Admin berhasil ditambahkan.']);
+    } else {
+        echo json_encode(['status' => 'error', 'message' => 'Gagal menambahkan admin.']);
+    }
+    exit();
+}
+
+if ($action === 'delete_admin' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    $raw_input = file_get_contents('php://input');
+    $input = json_decode($raw_input, true);
+    $id = (int)($input['id'] ?? 0);
+    
+    if ($id <= 0) {
+        echo json_encode(['status' => 'error', 'message' => 'ID tidak valid.']);
+        exit();
+    }
+    
+    $check = $conn->prepare("SELECT username FROM admins WHERE id = ?");
+    $check->bind_param("i", $id);
+    $check->execute();
+    $admin = $check->get_result()->fetch_assoc();
+    
+    if ($admin && $admin['username'] === 'admin') {
+        echo json_encode(['status' => 'error', 'message' => 'Super Admin tidak bisa dihapus.']);
+        exit();
+    }
+    
+    $stmt = $conn->prepare("DELETE FROM admins WHERE id = ?");
+    $stmt->bind_param("i", $id);
+    if($stmt->execute()) {
+        echo json_encode(['status' => 'success', 'message' => 'Admin berhasil dihapus.']);
+    } else {
+        echo json_encode(['status' => 'error', 'message' => 'Gagal menghapus admin.']);
+    }
+    exit();
+}
+
+// ============================
+// 19. VERIFY PAYMENT
+// ============================
+if ($action === 'verify_payment' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    $raw_input = file_get_contents('php://input');
+    $input = json_decode($raw_input, true);
+    
+    $id = (int)($input['id'] ?? 0);
+    $status = $input['status'] ?? 'pending';
+    
+    if ($id <= 0 || !in_array($status, ['pending', 'verified', 'rejected'])) {
+        echo json_encode(['status' => 'error', 'message' => 'Data tidak valid.']);
+        exit();
+    }
+    
+    $stmt = $conn->prepare("UPDATE registrations SET payment_status = ? WHERE id = ?");
+    $stmt->bind_param("si", $status, $id);
+    if($stmt->execute()) {
+        echo json_encode(['status' => 'success', 'message' => 'Status pembayaran berhasil diperbarui.']);
+    } else {
+        echo json_encode(['status' => 'error', 'message' => 'Gagal memperbarui status.']);
     }
     exit();
 }

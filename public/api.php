@@ -113,6 +113,33 @@ function sendNotificationEmail($subject, $messageHTML) {
 }
 
 // ============================
+// HELPER: Send Async JSON Response
+// ============================
+function sendAsyncJsonResponse($data) {
+    $json = json_encode($data);
+    
+    // Clear all existing output buffers
+    while (ob_get_level() > 0) {
+        ob_end_clean();
+    }
+    
+    header('Connection: close');
+    header('Content-Length: ' . strlen($json));
+    header('Content-Type: application/json; charset=utf-8');
+    
+    echo $json;
+    flush();
+    
+    if (function_exists('fastcgi_finish_request')) {
+        fastcgi_finish_request();
+    }
+    
+    if (session_id()) {
+        session_write_close();
+    }
+}
+
+// ============================
 // DEBUG: Test upload endpoint
 // ============================
 if ($action === 'debug_upload') {
@@ -413,15 +440,15 @@ if ($action === 'register' && $_SERVER['REQUEST_METHOD'] === 'POST') {
                 <p>Email ini dikirim secara otomatis oleh Sistem Pendaftaran Terpadu Open House Edelweiss.</p>
             </div>
         </div>";
-        sendNotificationEmail($emailSubject, $emailBody);
-
-        echo json_encode([
+        sendAsyncJsonResponse([
             'status' => 'success',
             'message' => $is_waiting_list ? 'Pendaftaran Waiting List berhasil disimpan!' : 'Pendaftaran berhasil disimpan!',
             'ticket_code' => $ticket_code,
             'slot_number' => $slot_number,
             'is_waiting_list' => $is_waiting_list
         ]);
+
+        sendNotificationEmail($emailSubject, $emailBody);
     } catch (Exception $e) {
         $conn->rollback();
         echo json_encode(['status' => 'error', 'message' => 'Gagal menyimpan pendaftaran: ' . $e->getMessage()]);
@@ -1149,12 +1176,12 @@ if ($action === 'student_select_schedule' && $_SERVER['REQUEST_METHOD'] === 'POS
                 <p>Email ini dikirim secara otomatis oleh Sistem Pendaftaran Terpadu Open House Edelweiss.</p>
             </div>
         </div>";
-        sendNotificationEmail($emailSubject, $emailBody);
-
-        echo json_encode([
+        sendAsyncJsonResponse([
             'status' => 'success',
             'message' => 'Jadwal Profiling Assessment berhasil disimpan!'
         ]);
+
+        sendNotificationEmail($emailSubject, $emailBody);
     } catch (Exception $e) {
         $conn->rollback();
         echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);

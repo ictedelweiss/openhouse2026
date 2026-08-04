@@ -56,6 +56,7 @@ CREATE TABLE registrations (
     attendance_session VARCHAR(100) NOT NULL,
     payment_method ENUM('pay_now', 'pay_onsite') NOT NULL DEFAULT 'pay_now',
     payment_proof VARCHAR(500) NULL, -- File URL on server (uploads/ directory)
+    payment_status ENUM('pending', 'verified', 'rejected') DEFAULT 'pending',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE KEY unique_child_registration (child_name, birth_date),
     INDEX idx_level_id (level_id),
