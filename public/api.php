@@ -367,12 +367,52 @@ if ($action === 'register' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $conn->commit();
 
-        $emailSubject = "Pendaftaran Baru: " . $ticket_code;
-        $emailBody = "<h3>Pendaftaran Baru (" . ($is_waiting_list ? 'Waiting List' : 'Reguler') . ")</h3>
-                      <p><strong>Nama Anak:</strong> $child_name</p>
-                      <p><strong>Nama Orang Tua:</strong> $parent_name</p>
-                      <p><strong>WhatsApp:</strong> $whatsapp</p>
-                      <p><strong>Email:</strong> $email</p>";
+        $tipe = $is_waiting_list ? 'Waiting List' : 'Reguler';
+        $emailSubject = "Pendaftaran Baru [$tipe]: " . $ticket_code;
+        $emailBody = "
+        <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #f8fafc; padding: 20px;'>
+            <div style='background-color: #002B5B; padding: 20px; border-radius: 8px 8px 0 0; text-align: center;'>
+                <h2 style='color: #FED700; margin: 0;'>Notifikasi Open House</h2>
+            </div>
+            <div style='background-color: #ffffff; padding: 30px; border-radius: 0 0 8px 8px; border: 1px solid #e2e8f0; border-top: none;'>
+                <h3 style='color: #1e293b; margin-top: 0;'>Pendaftaran Baru Masuk</h3>
+                <p style='color: #475569; line-height: 1.6;'>Terdapat pendaftaran baru yang perlu diverifikasi di sistem Open House dengan rincian sebagai berikut:</p>
+                
+                <table style='width: 100%; border-collapse: collapse; margin-top: 20px; margin-bottom: 20px; font-size: 14px;'>
+                    <tr>
+                        <td style='padding: 12px; border-bottom: 1px solid #e2e8f0; color: #64748b; width: 40%;'>Kode Tiket</td>
+                        <td style='padding: 12px; border-bottom: 1px solid #e2e8f0; color: #1e293b; font-weight: bold;'>$ticket_code</td>
+                    </tr>
+                    <tr>
+                        <td style='padding: 12px; border-bottom: 1px solid #e2e8f0; color: #64748b;'>Tipe Pendaftaran</td>
+                        <td style='padding: 12px; border-bottom: 1px solid #e2e8f0; color: #1e293b; font-weight: bold;'>$tipe</td>
+                    </tr>
+                    <tr>
+                        <td style='padding: 12px; border-bottom: 1px solid #e2e8f0; color: #64748b;'>Nama Anak</td>
+                        <td style='padding: 12px; border-bottom: 1px solid #e2e8f0; color: #1e293b; font-weight: bold;'>$child_name</td>
+                    </tr>
+                    <tr>
+                        <td style='padding: 12px; border-bottom: 1px solid #e2e8f0; color: #64748b;'>Nama Orang Tua</td>
+                        <td style='padding: 12px; border-bottom: 1px solid #e2e8f0; color: #1e293b; font-weight: bold;'>$parent_name</td>
+                    </tr>
+                    <tr>
+                        <td style='padding: 12px; border-bottom: 1px solid #e2e8f0; color: #64748b;'>WhatsApp</td>
+                        <td style='padding: 12px; border-bottom: 1px solid #e2e8f0; color: #1e293b; font-weight: bold;'>$whatsapp</td>
+                    </tr>
+                    <tr>
+                        <td style='padding: 12px; border-bottom: 1px solid #e2e8f0; color: #64748b;'>Email</td>
+                        <td style='padding: 12px; border-bottom: 1px solid #e2e8f0; color: #1e293b; font-weight: bold;'>$email</td>
+                    </tr>
+                </table>
+                
+                <div style='text-align: center; margin-top: 30px;'>
+                    <a href='https://openhouse.edelweiss.sch.id/admin/login' style='background-color: #293C88; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;'>Cek Dashboard Admin</a>
+                </div>
+            </div>
+            <div style='text-align: center; margin-top: 20px; color: #94a3b8; font-size: 12px;'>
+                <p>Email ini dikirim secara otomatis oleh Sistem Pendaftaran Terpadu Open House Edelweiss.</p>
+            </div>
+        </div>";
         sendNotificationEmail($emailSubject, $emailBody);
 
         echo json_encode([
@@ -1074,9 +1114,41 @@ if ($action === 'student_select_schedule' && $_SERVER['REQUEST_METHOD'] === 'POS
         $conn->commit();
 
         $st_name = $st_data['child_name'] ?? 'Siswa';
-        $emailSubject = "Jadwal Assessment Dipilih: " . $st_name;
-        $emailBody = "<h3>Jadwal Assessment Telah Dipilih</h3>
-                      <p>Siswa atas nama <strong>$st_name</strong> telah memilih jadwal assessment pada tanggal <strong>" . ($sch_data['date'] ?? '') . "</strong> jam <strong>" . ($sch_data['start_time'] ?? '') . "</strong>.</p>";
+        $tanggal = $sch_data['date'] ?? '';
+        $jam = $sch_data['start_time'] ?? '';
+        $emailSubject = "Jadwal Assessment Telah Dipilih: " . $st_name;
+        $emailBody = "
+        <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #f8fafc; padding: 20px;'>
+            <div style='background-color: #002B5B; padding: 20px; border-radius: 8px 8px 0 0; text-align: center;'>
+                <h2 style='color: #FED700; margin: 0;'>Notifikasi Open House</h2>
+            </div>
+            <div style='background-color: #ffffff; padding: 30px; border-radius: 0 0 8px 8px; border: 1px solid #e2e8f0; border-top: none;'>
+                <h3 style='color: #1e293b; margin-top: 0;'>Pemilihan Jadwal Assessment</h3>
+                <p style='color: #475569; line-height: 1.6;'>Siswa telah berhasil memilih jadwal Profiling Assessment dengan rincian sebagai berikut:</p>
+                
+                <table style='width: 100%; border-collapse: collapse; margin-top: 20px; margin-bottom: 20px; font-size: 14px;'>
+                    <tr>
+                        <td style='padding: 12px; border-bottom: 1px solid #e2e8f0; color: #64748b; width: 40%;'>Nama Anak</td>
+                        <td style='padding: 12px; border-bottom: 1px solid #e2e8f0; color: #1e293b; font-weight: bold;'>$st_name</td>
+                    </tr>
+                    <tr>
+                        <td style='padding: 12px; border-bottom: 1px solid #e2e8f0; color: #64748b;'>Tanggal Assessment</td>
+                        <td style='padding: 12px; border-bottom: 1px solid #e2e8f0; color: #1e293b; font-weight: bold;'>$tanggal</td>
+                    </tr>
+                    <tr>
+                        <td style='padding: 12px; border-bottom: 1px solid #e2e8f0; color: #64748b;'>Jam Assessment</td>
+                        <td style='padding: 12px; border-bottom: 1px solid #e2e8f0; color: #1e293b; font-weight: bold;'>$jam</td>
+                    </tr>
+                </table>
+                
+                <div style='text-align: center; margin-top: 30px;'>
+                    <a href='https://openhouse.edelweiss.sch.id/admin/login' style='background-color: #293C88; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;'>Cek Dashboard Admin</a>
+                </div>
+            </div>
+            <div style='text-align: center; margin-top: 20px; color: #94a3b8; font-size: 12px;'>
+                <p>Email ini dikirim secara otomatis oleh Sistem Pendaftaran Terpadu Open House Edelweiss.</p>
+            </div>
+        </div>";
         sendNotificationEmail($emailSubject, $emailBody);
 
         echo json_encode([

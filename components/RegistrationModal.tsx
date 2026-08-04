@@ -653,16 +653,6 @@ export default function RegistrationModal({
               </div>
             )}
 
-            {/* Cloudflare Turnstile Verified SSL Badge */}
-            <div className="bg-[#002B5B] text-white p-3 rounded-xl flex items-center justify-between text-xs font-semibold">
-              <div className="flex items-center gap-2">
-                <CheckCircle className="w-4 h-4 text-[#FED700]" />
-                <span>Cloudflare Turnstile Terverifikasi (Mode Prototipe)</span>
-              </div>
-              <span className="text-[10px] text-blue-200 font-bold uppercase tracking-wider flex items-center gap-1">
-                <ShieldCheck className="w-3.5 h-3.5 text-[#FED700]" /> SSL AMAN
-              </span>
-            </div>
 
             {/* Submit Action Buttons */}
             <div className="pt-3 border-t border-slate-100 flex items-center gap-3">
