@@ -101,6 +101,18 @@ function handleFileUpload($file, $upload_dir, $upload_url_base)
 }
 
 // ============================
+// HELPER: Send Notification Email
+// ============================
+function sendNotificationEmail($subject, $messageHTML) {
+    $to = 'oh@edelweiss.sch.id';
+    $headers = "MIME-Version: 1.0" . "\r\n";
+    $headers .= "Content-type:text/html;charset=UTF-8" . "\r\n";
+    $headers .= "From: Open House Edelweiss <noreply@eliteacademia.id>" . "\r\n";
+    
+    @mail($to, $subject, $messageHTML, $headers);
+}
+
+// ============================
 // DEBUG: Test upload endpoint
 // ============================
 if ($action === 'debug_upload') {
@@ -354,6 +366,14 @@ if ($action === 'register' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         $ins_stmt->execute();
 
         $conn->commit();
+
+        $emailSubject = "Pendaftaran Baru: " . $ticket_code;
+        $emailBody = "<h3>Pendaftaran Baru (" . ($is_waiting_list ? 'Waiting List' : 'Reguler') . ")</h3>
+                      <p><strong>Nama Anak:</strong> $child_name</p>
+                      <p><strong>Nama Orang Tua:</strong> $parent_name</p>
+                      <p><strong>WhatsApp:</strong> $whatsapp</p>
+                      <p><strong>Email:</strong> $email</p>";
+        sendNotificationEmail($emailSubject, $emailBody);
 
         echo json_encode([
             'status' => 'success',
@@ -835,7 +855,32 @@ if ($action === 'student_login' && $_SERVER['REQUEST_METHOD'] === 'POST') {
                 'child_name' => $student['child_name'],
                 'ticket_code' => $student['ticket_code'],
                 'email' => $student['email'],
-                'level_name' => $student['level_name']
+                'level_name' => $student['level_name'],
+                'payment_status' => $student['payment_status'] ?? 'pending'
+            ]
+        ]);
+        exit();
+    }
+
+    if (!isset($student['payment_status']) || $student['payment_status'] === 'pending') {
+        echo json_encode([
+            'status' => 'payment_pending',
+            'message' => 'Pembayaran Anda sedang diverifikasi oleh admin. Silakan tunggu atau hubungi admin.',
+            'student' => [
+                'id' => (int) $student['id'],
+                'payment_status' => 'pending'
+            ]
+        ]);
+        exit();
+    }
+
+    if ($student['payment_status'] === 'rejected') {
+        echo json_encode([
+            'status' => 'payment_rejected',
+            'message' => 'Bukti pembayaran Anda ditolak. Silakan hubungi admin.',
+            'student' => [
+                'id' => (int) $student['id'],
+                'payment_status' => 'rejected'
             ]
         ]);
         exit();
@@ -983,17 +1028,17 @@ if ($action === 'student_select_schedule' && $_SERVER['REQUEST_METHOD'] === 'POS
     $conn->begin_transaction();
     try {
         // Verify payment proof
-        $st_check = $conn->prepare("SELECT payment_proof FROM registrations WHERE id = ?");
+        $st_check = $conn->prepare("SELECT child_name, payment_proof, payment_status FROM registrations WHERE id = ?");
         $st_check->bind_param("i", $student_id);
         $st_check->execute();
         $st_data = $st_check->get_result()->fetch_assoc();
 
-        if (!$st_data || empty($st_data['payment_proof'])) {
-            throw new Exception('Gagal: Bukti pembayaran belum diunggah atau diverifikasi.');
+        if (!$st_data || empty($st_data['payment_proof']) || $st_data['payment_status'] !== 'verified') {
+            throw new Exception('Gagal: Bukti pembayaran belum diunggah atau belum diverifikasi oleh admin.');
         }
 
         // Check schedule capacity
-        $cap_check = $conn->prepare("SELECT capacity, (SELECT COUNT(*) FROM assessment_allocations WHERE schedule_id = ?) as current_count FROM assessment_schedules WHERE id = ? FOR UPDATE");
+        $cap_check = $conn->prepare("SELECT capacity, date, start_time, (SELECT COUNT(*) FROM assessment_allocations WHERE schedule_id = ?) as current_count FROM assessment_schedules WHERE id = ? FOR UPDATE");
         $cap_check->bind_param("ii", $schedule_id, $schedule_id);
         $cap_check->execute();
         $sch_data = $cap_check->get_result()->fetch_assoc();
@@ -1026,6 +1071,12 @@ if ($action === 'student_select_schedule' && $_SERVER['REQUEST_METHOD'] === 'POS
 
         $conn->commit();
 
+        $st_name = $st_data['child_name'] ?? 'Siswa';
+        $emailSubject = "Jadwal Assessment Dipilih: " . $st_name;
+        $emailBody = "<h3>Jadwal Assessment Telah Dipilih</h3>
+                      <p>Siswa atas nama <strong>$st_name</strong> telah memilih jadwal assessment pada tanggal <strong>" . ($sch_data['date'] ?? '') . "</strong> jam <strong>" . ($sch_data['start_time'] ?? '') . "</strong>.</p>";
+        sendNotificationEmail($emailSubject, $emailBody);
+
         echo json_encode([
             'status' => 'success',
             'message' => 'Jadwal Profiling Assessment berhasil disimpan!'
@@ -1033,6 +1084,107 @@ if ($action === 'student_select_schedule' && $_SERVER['REQUEST_METHOD'] === 'POS
     } catch (Exception $e) {
         $conn->rollback();
         echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
+    }
+    exit();
+}
+
+// ============================
+// 18. ADMIN MANAGEMENT
+// ============================
+if ($action === 'get_admins' && $_SERVER['REQUEST_METHOD'] === 'GET') {
+    $res = $conn->query("SELECT id, username, name, created_at FROM admins ORDER BY id ASC");
+    $admins = [];
+    if ($res) {
+        while ($row = $res->fetch_assoc()) {
+            $admins[] = $row;
+        }
+    }
+    echo json_encode(['status' => 'success', 'data' => $admins]);
+    exit();
+}
+
+if ($action === 'create_admin' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    $raw_input = file_get_contents('php://input');
+    $input = json_decode($raw_input, true);
+    
+    $username = trim($input['username'] ?? '');
+    $password = trim($input['password'] ?? '');
+    $name = trim($input['name'] ?? '');
+    
+    if(empty($username) || empty($password) || empty($name)) {
+        echo json_encode(['status' => 'error', 'message' => 'Semua field wajib diisi.']);
+        exit();
+    }
+    
+    $check = $conn->prepare("SELECT id FROM admins WHERE username = ?");
+    $check->bind_param("s", $username);
+    $check->execute();
+    if ($check->get_result()->num_rows > 0) {
+        echo json_encode(['status' => 'error', 'message' => 'Username sudah digunakan.']);
+        exit();
+    }
+    
+    $stmt = $conn->prepare("INSERT INTO admins (username, password, name) VALUES (?, ?, ?)");
+    $stmt->bind_param("sss", $username, $password, $name);
+    if($stmt->execute()) {
+        echo json_encode(['status' => 'success', 'message' => 'Admin berhasil ditambahkan.']);
+    } else {
+        echo json_encode(['status' => 'error', 'message' => 'Gagal menambahkan admin.']);
+    }
+    exit();
+}
+
+if ($action === 'delete_admin' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    $raw_input = file_get_contents('php://input');
+    $input = json_decode($raw_input, true);
+    $id = (int)($input['id'] ?? 0);
+    
+    if ($id <= 0) {
+        echo json_encode(['status' => 'error', 'message' => 'ID tidak valid.']);
+        exit();
+    }
+    
+    $check = $conn->prepare("SELECT username FROM admins WHERE id = ?");
+    $check->bind_param("i", $id);
+    $check->execute();
+    $admin = $check->get_result()->fetch_assoc();
+    
+    if ($admin && $admin['username'] === 'admin') {
+        echo json_encode(['status' => 'error', 'message' => 'Super Admin tidak bisa dihapus.']);
+        exit();
+    }
+    
+    $stmt = $conn->prepare("DELETE FROM admins WHERE id = ?");
+    $stmt->bind_param("i", $id);
+    if($stmt->execute()) {
+        echo json_encode(['status' => 'success', 'message' => 'Admin berhasil dihapus.']);
+    } else {
+        echo json_encode(['status' => 'error', 'message' => 'Gagal menghapus admin.']);
+    }
+    exit();
+}
+
+// ============================
+// 19. VERIFY PAYMENT
+// ============================
+if ($action === 'verify_payment' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    $raw_input = file_get_contents('php://input');
+    $input = json_decode($raw_input, true);
+    
+    $id = (int)($input['id'] ?? 0);
+    $status = $input['status'] ?? 'pending';
+    
+    if ($id <= 0 || !in_array($status, ['pending', 'verified', 'rejected'])) {
+        echo json_encode(['status' => 'error', 'message' => 'Data tidak valid.']);
+        exit();
+    }
+    
+    $stmt = $conn->prepare("UPDATE registrations SET payment_status = ? WHERE id = ?");
+    $stmt->bind_param("si", $status, $id);
+    if($stmt->execute()) {
+        echo json_encode(['status' => 'success', 'message' => 'Status pembayaran berhasil diperbarui.']);
+    } else {
+        echo json_encode(['status' => 'error', 'message' => 'Gagal memperbarui status.']);
     }
     exit();
 }

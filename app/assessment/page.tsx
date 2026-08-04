@@ -35,6 +35,7 @@ interface StudentProfile {
   level_id: string;
   level_name: string;
   payment_proof: string;
+  payment_status?: 'pending' | 'verified' | 'rejected';
 }
 
 interface Allocation {
@@ -68,7 +69,7 @@ export default function AssessmentPortalPage() {
   const [allocation, setAllocation] = useState<Allocation | null>(null);
   const [schedules, setSchedules] = useState<AssessmentSchedule[]>([]);
   const [category, setCategory] = useState<string>('');
-  const [paymentRequired, setPaymentRequired] = useState(false);
+  const [paymentState, setPaymentState] = useState<'ok'|'required'|'pending'|'rejected'>('ok');
   const [confirmModalId, setConfirmModalId] = useState<number | null>(null);
 
   useEffect(() => {
@@ -93,7 +94,7 @@ export default function AssessmentPortalPage() {
     setIsLoading(true);
     setErrorMsg(null);
     setSuccessMsg(null);
-    setPaymentRequired(false);
+    setPaymentState('ok');
 
     try {
       const res = await fetch(`${API_BASE_URL}?action=student_login`, {
@@ -110,7 +111,15 @@ export default function AssessmentPortalPage() {
         localStorage.setItem('assessment_student_session', JSON.stringify({ student: result.student, allocation: result.allocation }));
       } else if (result.status === 'payment_required') {
         setStudent(result.student);
-        setPaymentRequired(true);
+        setPaymentState('required');
+        setErrorMsg(result.message);
+      } else if (result.status === 'payment_pending') {
+        setStudent(result.student);
+        setPaymentState('pending');
+        setErrorMsg(result.message);
+      } else if (result.status === 'payment_rejected') {
+        setStudent(result.student);
+        setPaymentState('rejected');
         setErrorMsg(result.message);
       } else {
         setErrorMsg(result.message || 'Login gagal. Periksa kembali email dan tanggal lahir anak Anda.');
@@ -180,7 +189,7 @@ export default function AssessmentPortalPage() {
     localStorage.removeItem('assessment_student_session');
     setStudent(null);
     setAllocation(null);
-    setPaymentRequired(false);
+    setPaymentState('ok');
     setEmail('');
     setPassword('');
     setErrorMsg(null);
@@ -330,17 +339,24 @@ export default function AssessmentPortalPage() {
           </div>
         )}
 
-        {/* ─── PAYMENT REQUIRED ─── */}
-        {student && paymentRequired && (
+        {/* ─── PAYMENT REQUIRED / PENDING / REJECTED ─── */}
+        {student && paymentState !== 'ok' && (
           <div className="max-w-md mx-auto">
             <div className="bg-white rounded-2xl border border-amber-200  p-8 text-center">
               <div className="w-14 h-14 bg-amber-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
                 <CreditCard className="w-7 h-7 text-amber-600" />
               </div>
-              <h2 className="text-xl font-bold text-gray-900 mb-2">Pembayaran Belum Terverifikasi</h2>
+              <h2 className="text-xl font-bold text-gray-900 mb-2">
+                {paymentState === 'required' ? 'Bukti Pembayaran Belum Diunggah' :
+                 paymentState === 'pending' ? 'Pembayaran Sedang Diverifikasi' :
+                 'Bukti Pembayaran Ditolak'}
+              </h2>
               <p className="text-sm text-gray-600 mb-6 leading-relaxed">
-                Halo Bpk/Ibu dari <strong>{student.child_name}</strong> ({student.level_name}).
-                Penjadwalan mandiri memerlukan konfirmasi bukti pembayaran terlebih dahulu.
+                {paymentState === 'required' ? 
+                  <><span className="font-semibold text-gray-800">Halo Bpk/Ibu dari {student.child_name} ({student.level_name}).</span><br/>Penjadwalan mandiri memerlukan konfirmasi bukti pembayaran terlebih dahulu.</> :
+                 paymentState === 'pending' ? 
+                  <><span className="font-semibold text-gray-800">Halo Bpk/Ibu dari {student.child_name}.</span><br/>Bukti pembayaran Anda sedang dalam proses verifikasi oleh Admin. Silakan tunggu atau hubungi Admin untuk info lebih lanjut.</> :
+                  <><span className="font-semibold text-gray-800">Halo Bpk/Ibu dari {student.child_name}.</span><br/>Bukti pembayaran Anda <strong>ditolak</strong> oleh Admin. Silakan kirimkan bukti pembayaran yang benar melalui WhatsApp Admin.</>}
               </p>
               <div className="bg-gray-50 rounded-xl border border-gray-200 p-4 text-sm text-left space-y-2 mb-6">
                 <div className="flex justify-between"><span className="text-gray-500">Kode Tiket</span><strong className="font-mono text-[#002B5B]">{student.ticket_code}</strong></div>
@@ -372,7 +388,7 @@ export default function AssessmentPortalPage() {
         )}
 
         {/* ─── DASHBOARD UTAMA ─── */}
-        {student && !paymentRequired && (
+        {student && paymentState === 'ok' && (
           <div className="space-y-6">
 
             {/* Student Card */}
