@@ -623,7 +623,7 @@ export default function RegistrationModal({
                 {formData.payment_method === 'pay_now' && (
                   <div className="bg-blue-50/70 p-3.5 rounded-xl border border-blue-200/80 space-y-2">
                     <div className="text-xs text-blue-900 font-semibold flex items-center gap-1">
-                      <CreditCard className="w-4 h-4 text-[#293C88]" /> Rekening Transfer Bank Mandiri: <strong>123-000-9876-543</strong> a/n Edelweiss School
+                      <CreditCard className="w-4 h-4 text-[#293C88]" /> Rekening Transfer BCA: <strong>7510828768</strong> a/n YAY SINAR PUTIH EDELWEISS
                     </div>
 
                     <div className="pt-1">

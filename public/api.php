@@ -1,4 +1,9 @@
 <?php
+// Enable zlib output compression if supported
+if (!ob_start("ob_gzhandler")) {
+    ob_start();
+}
+
 // CORS headers - must be set before ANY output
 $origin = isset($_SERVER['HTTP_ORIGIN']) ? $_SERVER['HTTP_ORIGIN'] : '*';
 header("Access-Control-Allow-Origin: $origin");
@@ -14,17 +19,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 // Optimize Database Connection
-$db_host = 'p:localhost'; // Persistent connection to avoid TCP connection overhead
+$db_host = 'localhost';
 $db_user = 'eliteac1_aris';
 $db_pass = '12345Q@zaqw';
 $db_name = 'eliteac1_openhouse2026';
 
 $conn = new mysqli($db_host, $db_user, $db_pass, $db_name);
-
-if ($conn->connect_error) {
-    // Fallback to non-persistent connection if persistent connection fails
-    $conn = new mysqli('localhost', $db_user, $db_pass, $db_name);
-}
 
 if ($conn->connect_error) {
     echo json_encode([
@@ -252,7 +252,7 @@ if ($action === 'get_registrations' && $_SERVER['REQUEST_METHOD'] === 'GET') {
     $query = "SELECT r.*, l.name as level_name, l.code as level_code, l.category as level_category 
                 FROM registrations r 
                 JOIN levels l ON r.level_id = l.id 
-                ORDER BY r.created_at DESC";
+                ORDER BY r.id DESC";
     $result = $conn->query($query);
 
     $registrations = [];
@@ -480,10 +480,15 @@ if ($action === 'delete_registration' && $_SERVER['REQUEST_METHOD'] === 'POST') 
 // 7. GET SCHEDULES
 // ============================
 if ($action === 'get_schedules' && $_SERVER['REQUEST_METHOD'] === 'GET') {
-    $query = "SELECT s.*, 
-                (SELECT COUNT(*) FROM assessment_allocations a WHERE a.schedule_id = s.id) as allocated_count 
-                FROM assessment_schedules s 
-                ORDER BY s.date ASC, s.start_time ASC";
+    $query = "SELECT s.id, s.date, s.start_time, s.end_time, s.level, s.capacity,
+                COALESCE(cnt.allocated_count, 0) as allocated_count
+              FROM assessment_schedules s
+              LEFT JOIN (
+                SELECT schedule_id, COUNT(*) as allocated_count
+                FROM assessment_allocations
+                GROUP BY schedule_id
+              ) cnt ON cnt.schedule_id = s.id
+              ORDER BY s.date ASC, s.start_time ASC";
     $result = $conn->query($query);
     $schedules = [];
     if ($result && $result->num_rows > 0) {
@@ -794,7 +799,7 @@ if ($action === 'student_login' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $stmt = $conn->prepare("SELECT r.*, l.name as level_name, l.code as level_code 
                             FROM registrations r 
                             JOIN levels l ON r.level_id = l.id 
-                            WHERE LOWER(r.email) = ? 
+                            WHERE r.email = ? 
                             ORDER BY r.id DESC LIMIT 1");
     $stmt->bind_param("s", $email);
     $stmt->execute();
@@ -846,6 +851,37 @@ if ($action === 'student_login' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $alloc_res = $alloc_stmt->get_result();
     $allocation = $alloc_res ? $alloc_res->fetch_assoc() : null;
 
+    // Fetch schedules in same request to avoid 2nd HTTP round-trip
+    $lvl_name = strtolower($student['level_name']);
+    $cat = 'primary';
+    if (strpos($lvl_name, 'kiddy') !== false || strpos($lvl_name, 'kindergarten') !== false || strpos($lvl_name, 'tk') !== false || strpos($lvl_name, 'k2') !== false || strpos($lvl_name, 'k1') !== false) {
+        $cat = 'kiddy';
+    } elseif (strpos($lvl_name, 'secondary') !== false || strpos($lvl_name, 'smp') !== false || strpos($lvl_name, 'sma') !== false) {
+        $cat = 'secondary';
+    }
+
+    $sch_query = "SELECT s.id, s.date, s.start_time, s.end_time, s.level, s.capacity,
+                    COALESCE(cnt.allocated_count, 0) as allocated_count
+                  FROM assessment_schedules s
+                  LEFT JOIN (
+                    SELECT schedule_id, COUNT(*) as allocated_count
+                    FROM assessment_allocations
+                    GROUP BY schedule_id
+                  ) cnt ON cnt.schedule_id = s.id
+                  WHERE s.level = ?
+                  ORDER BY s.date ASC, s.start_time ASC";
+    $sch_stmt = $conn->prepare($sch_query);
+    $sch_stmt->bind_param("s", $cat);
+    $sch_stmt->execute();
+    $sch_res = $sch_stmt->get_result();
+
+    $schedules = [];
+    if ($sch_res && $sch_res->num_rows > 0) {
+        while ($row = $sch_res->fetch_assoc()) {
+            $schedules[] = $row;
+        }
+    }
+
     echo json_encode([
         'status' => 'success',
         'message' => 'Login berhasil!',
@@ -861,7 +897,9 @@ if ($action === 'student_login' && $_SERVER['REQUEST_METHOD'] === 'POST') {
             'level_name' => $student['level_name'],
             'payment_proof' => $student['payment_proof']
         ],
-        'allocation' => $allocation
+        'allocation' => $allocation,
+        'category' => $cat,
+        'schedules' => $schedules
     ]);
     exit();
 }
@@ -896,10 +934,16 @@ if ($action === 'get_student_schedules' && $_SERVER['REQUEST_METHOD'] === 'GET')
         $cat = 'secondary';
     }
 
-    $query = "SELECT s.*, 
-                (SELECT COUNT(*) FROM assessment_allocations a WHERE a.schedule_id = s.id) as allocated_count 
-              FROM assessment_schedules s 
-              WHERE s.level = ? 
+    // Efficient query: LEFT JOIN with GROUP BY instead of correlated subquery
+    $query = "SELECT s.id, s.date, s.start_time, s.end_time, s.level, s.capacity,
+                COALESCE(cnt.allocated_count, 0) as allocated_count
+              FROM assessment_schedules s
+              LEFT JOIN (
+                SELECT schedule_id, COUNT(*) as allocated_count
+                FROM assessment_allocations
+                GROUP BY schedule_id
+              ) cnt ON cnt.schedule_id = s.id
+              WHERE s.level = ?
               ORDER BY s.date ASC, s.start_time ASC";
     $sch_stmt = $conn->prepare($query);
     $sch_stmt->bind_param("s", $cat);

@@ -112,7 +112,7 @@
         "transform": "lodash/{{member}}"
       }
     },
-    "outputFileTracingRoot": "C:\\xampp2\\htdocs\\openhouse",
+    "outputFileTracingRoot": "C:\\Users\\Aris\\Documents\\openhouse\\openhouse2026-main",
     "cacheComponents": false,
     "cacheLife": {
       "default": {
@@ -312,11 +312,11 @@
     "bundlePagesRouterDependencies": false,
     "configFileName": "next.config.ts",
     "turbopack": {
-      "root": "C:\\xampp2\\htdocs\\openhouse"
+      "root": "C:\\Users\\Aris\\Documents\\openhouse\\openhouse2026-main"
     },
     "distDirRoot": ".next"
   },
-  "appDir": "C:\\xampp2\\htdocs\\openhouse",
+  "appDir": "C:\\Users\\Aris\\Documents\\openhouse\\openhouse2026-main",
   "relativeAppDir": "",
   "files": [
     ".next\\package.json",

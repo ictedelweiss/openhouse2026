@@ -122,6 +122,30 @@
         "x-next-revalidate-tag-token"
       ]
     },
+    "/assessment": {
+      "experimentalBypassFor": [
+        {
+          "type": "header",
+          "key": "next-action"
+        },
+        {
+          "type": "header",
+          "key": "content-type",
+          "value": "multipart/form-data;.*"
+        }
+      ],
+      "initialRevalidateSeconds": false,
+      "srcRoute": "/assessment",
+      "dataRoute": "/assessment.rsc",
+      "allowHeader": [
+        "host",
+        "x-matched-path",
+        "x-prerender-revalidate",
+        "x-prerender-revalidate-if-generated",
+        "x-next-revalidated-tags",
+        "x-next-revalidate-tag-token"
+      ]
+    },
     "/favicon.ico": {
       "initialHeaders": {
         "cache-control": "public, max-age=0, must-revalidate",
@@ -141,6 +165,35 @@
       ],
       "initialRevalidateSeconds": false,
       "srcRoute": "/favicon.ico",
+      "dataRoute": null,
+      "allowHeader": [
+        "host",
+        "x-matched-path",
+        "x-prerender-revalidate",
+        "x-prerender-revalidate-if-generated",
+        "x-next-revalidated-tags",
+        "x-next-revalidate-tag-token"
+      ]
+    },
+    "/icon.png": {
+      "initialHeaders": {
+        "cache-control": "public, max-age=0, must-revalidate",
+        "content-type": "image/png",
+        "x-next-cache-tags": "_N_T_/layout,_N_T_/icon.png/layout,_N_T_/icon.png/route,_N_T_/icon.png"
+      },
+      "experimentalBypassFor": [
+        {
+          "type": "header",
+          "key": "next-action"
+        },
+        {
+          "type": "header",
+          "key": "content-type",
+          "value": "multipart/form-data;.*"
+        }
+      ],
+      "initialRevalidateSeconds": false,
+      "srcRoute": "/icon.png",
       "dataRoute": null,
       "allowHeader": [
         "host",
@@ -179,8 +232,8 @@
   "dynamicRoutes": {},
   "notFoundRoutes": [],
   "preview": {
-    "previewModeId": "e0eb1eec15a331da65d931de6bfec3ef",
-    "previewModeSigningKey": "c1187b5095031ad21602b6b8648c9dab58f4de5fccd595e060d53f93b9570b83",
-    "previewModeEncryptionKey": "ccc565e2df4f973f610c7d5347770ee2379e6bad90127c50e7b4e994e360cb7b"
+    "previewModeId": "4c101dfb94f98ce0e4c3a720cc9dd975",
+    "previewModeSigningKey": "77f6e9e78305414d4908cdcce1b16c8de9c555cf7cb1051166c61ca7eb04c54f",
+    "previewModeEncryptionKey": "62cb67ee0261dc6b1f3d26327def39b89c8e4575ce39f4757689cded1e5b43ea"
   }
 }
