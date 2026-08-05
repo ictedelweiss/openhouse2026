@@ -118,47 +118,35 @@ function sendNotificationEmail($subject, $messageHTML) {
     $url = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://" . $_SERVER['HTTP_HOST'] . explode('?', $_SERVER['REQUEST_URI'])[0] . "?action=internal_send_email";
     $postData = json_encode(['subject' => $subject, 'message' => $messageHTML]);
 
-    $ch = curl_init($url);
-    curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
-    curl_setopt($ch, CURLOPT_POSTFIELDS, $postData);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_TIMEOUT_MS, 200);
-    curl_setopt($ch, CURLOPT_HTTPHEADER, [
-        'Content-Type: application/json',
-        'Content-Length: ' . strlen($postData)
-    ]);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+    $parts = parse_url($url);
+    $host = $parts['host'];
+    $port = isset($parts['port']) ? $parts['port'] : (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 443 : 80);
+    $path = $parts['path'] . (isset($parts['query']) ? '?' . $parts['query'] : '');
     
-    @curl_exec($ch);
-    @curl_close($ch);
+    if ($port == 443) {
+        $host = 'ssl://' . $host;
+    }
+
+    $fp = @fsockopen($host, $port, $errno, $errstr, 1);
+    if ($fp) {
+        $out = "POST " . $path . " HTTP/1.1\r\n";
+        $out .= "Host: " . $parts['host'] . "\r\n";
+        $out .= "Content-Type: application/json\r\n";
+        $out .= "Content-Length: " . strlen($postData) . "\r\n";
+        $out .= "Connection: Close\r\n\r\n";
+        $out .= $postData;
+        fwrite($fp, $out);
+        fclose($fp);
+    }
 }
 
 // ============================
 // HELPER: Send Async JSON Response
 // ============================
 function sendAsyncJsonResponse($data) {
-    $json = json_encode($data);
-    
-    // Clear all existing output buffers
-    while (ob_get_level() > 0) {
-        ob_end_clean();
-    }
-    
-    header('Connection: close');
-    header('Content-Length: ' . strlen($json));
     header('Content-Type: application/json; charset=utf-8');
-    
-    echo $json;
-    flush();
-    
-    if (function_exists('fastcgi_finish_request')) {
-        fastcgi_finish_request();
-    }
-    
-    if (session_id()) {
-        session_write_close();
-    }
+    echo json_encode($data);
+    exit();
 }
 
 // ============================
@@ -399,6 +387,12 @@ if ($action === 'register' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         exit();
     }
 
+    // Limit file upload size for base64 (2MB file = ~2.66MB base64 overhead)
+    if (!empty($payment_proof) && strlen($payment_proof) > 2.8 * 1024 * 1024) {
+        echo json_encode(['status' => 'error', 'message' => 'Ukuran file bukti pembayaran terlalu besar. Maksimal 2MB.']);
+        exit();
+    }
+
     $prefix = $is_waiting_list ? 'WAIT' : (($registration_type === 'transfer') ? 'TRF' : 'NEW');
     $ticket_code = 'ELC-' . $prefix . '-' . ($is_waiting_list ? 'WL' : sprintf("%02d", $slot_number)) . '-' . rand(100, 999);
 
@@ -462,6 +456,8 @@ if ($action === 'register' && $_SERVER['REQUEST_METHOD'] === 'POST') {
                 <p>Email ini dikirim secara otomatis oleh Sistem Pendaftaran Terpadu Open House Edelweiss.</p>
             </div>
         </div>";
+        sendNotificationEmail($emailSubject, $emailBody);
+
         sendAsyncJsonResponse([
             'status' => 'success',
             'message' => $is_waiting_list ? 'Pendaftaran Waiting List berhasil disimpan!' : 'Pendaftaran berhasil disimpan!',
@@ -469,8 +465,6 @@ if ($action === 'register' && $_SERVER['REQUEST_METHOD'] === 'POST') {
             'slot_number' => $slot_number,
             'is_waiting_list' => $is_waiting_list
         ]);
-
-        sendNotificationEmail($emailSubject, $emailBody);
     } catch (Exception $e) {
         $conn->rollback();
         echo json_encode(['status' => 'error', 'message' => 'Gagal menyimpan pendaftaran: ' . $e->getMessage()]);
@@ -1198,12 +1192,12 @@ if ($action === 'student_select_schedule' && $_SERVER['REQUEST_METHOD'] === 'POS
                 <p>Email ini dikirim secara otomatis oleh Sistem Pendaftaran Terpadu Open House Edelweiss.</p>
             </div>
         </div>";
+        sendNotificationEmail($emailSubject, $emailBody);
+
         sendAsyncJsonResponse([
             'status' => 'success',
             'message' => 'Jadwal Profiling Assessment berhasil disimpan!'
         ]);
-
-        sendNotificationEmail($emailSubject, $emailBody);
     } catch (Exception $e) {
         $conn->rollback();
         echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);

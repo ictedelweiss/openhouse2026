@@ -542,7 +542,11 @@ const FIXED_LEVEL_ORDER = [
                       <span className="text-xs font-bold uppercase tracking-wider text-[#293C88]">
                         Kelas {lvl.code}
                       </span>
-                      {isFull ? (
+                      {loading ? (
+                        <span className="bg-slate-200 text-slate-400 text-[10px] font-extrabold px-2 py-0.5 rounded-full uppercase animate-pulse">
+                          Memuat...
+                        </span>
+                      ) : isFull ? (
                         <span className="bg-amber-500 text-white text-[10px] font-extrabold px-2 py-0.5 rounded-full uppercase flex items-center gap-1">
                           Waiting List
                         </span>
@@ -560,9 +564,13 @@ const FIXED_LEVEL_ORDER = [
 
                   <div className="mt-4 pt-2 border-t border-slate-200/60 flex items-center justify-between">
                     <span className="text-xs text-slate-500">
-                      {isFull ? 'Waiting List:' : 'Sisa Kuota:'}
+                      {loading ? 'Memuat Data:' : (isFull ? 'Waiting List:' : 'Sisa Kuota:')}
                     </span>
-                    {isFull ? (
+                    {loading ? (
+                      <span className="text-sm font-extrabold text-slate-400 bg-slate-100 px-3 py-0.5 rounded-lg border border-slate-200 animate-pulse">
+                        ... / ... Kursi
+                      </span>
+                    ) : isFull ? (
                       <span className="text-xs font-extrabold text-amber-700 bg-amber-200/80 px-2 py-0.5 rounded-lg border border-amber-300">
                         {wlCount > 0 ? `${wlCount} Orang Antri` : 'Daftar Waiting List'}
                       </span>
