@@ -144,27 +144,9 @@ function sendNotificationEmail($subject, $messageHTML) {
 // HELPER: Send Async JSON Response
 // ============================
 function sendAsyncJsonResponse($data) {
-    $json = json_encode($data);
-    
-    // Clear all existing output buffers
-    while (ob_get_level() > 0) {
-        ob_end_clean();
-    }
-    
-    header('Connection: close');
-    header('Content-Length: ' . strlen($json));
     header('Content-Type: application/json; charset=utf-8');
-    
-    echo $json;
-    flush();
-    
-    if (function_exists('fastcgi_finish_request')) {
-        fastcgi_finish_request();
-    }
-    
-    if (session_id()) {
-        session_write_close();
-    }
+    echo json_encode($data);
+    exit();
 }
 
 // ============================
@@ -405,6 +387,12 @@ if ($action === 'register' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         exit();
     }
 
+    // Limit file upload size for base64 (2MB file = ~2.66MB base64 overhead)
+    if (!empty($payment_proof) && strlen($payment_proof) > 2.8 * 1024 * 1024) {
+        echo json_encode(['status' => 'error', 'message' => 'Ukuran file bukti pembayaran terlalu besar. Maksimal 2MB.']);
+        exit();
+    }
+
     $prefix = $is_waiting_list ? 'WAIT' : (($registration_type === 'transfer') ? 'TRF' : 'NEW');
     $ticket_code = 'ELC-' . $prefix . '-' . ($is_waiting_list ? 'WL' : sprintf("%02d", $slot_number)) . '-' . rand(100, 999);
 
@@ -468,6 +456,8 @@ if ($action === 'register' && $_SERVER['REQUEST_METHOD'] === 'POST') {
                 <p>Email ini dikirim secara otomatis oleh Sistem Pendaftaran Terpadu Open House Edelweiss.</p>
             </div>
         </div>";
+        sendNotificationEmail($emailSubject, $emailBody);
+
         sendAsyncJsonResponse([
             'status' => 'success',
             'message' => $is_waiting_list ? 'Pendaftaran Waiting List berhasil disimpan!' : 'Pendaftaran berhasil disimpan!',
@@ -475,8 +465,6 @@ if ($action === 'register' && $_SERVER['REQUEST_METHOD'] === 'POST') {
             'slot_number' => $slot_number,
             'is_waiting_list' => $is_waiting_list
         ]);
-
-        sendNotificationEmail($emailSubject, $emailBody);
     } catch (Exception $e) {
         $conn->rollback();
         echo json_encode(['status' => 'error', 'message' => 'Gagal menyimpan pendaftaran: ' . $e->getMessage()]);
@@ -1204,12 +1192,12 @@ if ($action === 'student_select_schedule' && $_SERVER['REQUEST_METHOD'] === 'POS
                 <p>Email ini dikirim secara otomatis oleh Sistem Pendaftaran Terpadu Open House Edelweiss.</p>
             </div>
         </div>";
+        sendNotificationEmail($emailSubject, $emailBody);
+
         sendAsyncJsonResponse([
             'status' => 'success',
             'message' => 'Jadwal Profiling Assessment berhasil disimpan!'
         ]);
-
-        sendNotificationEmail($emailSubject, $emailBody);
     } catch (Exception $e) {
         $conn->rollback();
         echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
