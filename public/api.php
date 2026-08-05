@@ -118,20 +118,26 @@ function sendNotificationEmail($subject, $messageHTML) {
     $url = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://" . $_SERVER['HTTP_HOST'] . explode('?', $_SERVER['REQUEST_URI'])[0] . "?action=internal_send_email";
     $postData = json_encode(['subject' => $subject, 'message' => $messageHTML]);
 
-    $ch = curl_init($url);
-    curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
-    curl_setopt($ch, CURLOPT_POSTFIELDS, $postData);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_TIMEOUT_MS, 200);
-    curl_setopt($ch, CURLOPT_HTTPHEADER, [
-        'Content-Type: application/json',
-        'Content-Length: ' . strlen($postData)
-    ]);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+    $parts = parse_url($url);
+    $host = $parts['host'];
+    $port = isset($parts['port']) ? $parts['port'] : (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 443 : 80);
+    $path = $parts['path'] . (isset($parts['query']) ? '?' . $parts['query'] : '');
     
-    @curl_exec($ch);
-    @curl_close($ch);
+    if ($port == 443) {
+        $host = 'ssl://' . $host;
+    }
+
+    $fp = @fsockopen($host, $port, $errno, $errstr, 1);
+    if ($fp) {
+        $out = "POST " . $path . " HTTP/1.1\r\n";
+        $out .= "Host: " . $parts['host'] . "\r\n";
+        $out .= "Content-Type: application/json\r\n";
+        $out .= "Content-Length: " . strlen($postData) . "\r\n";
+        $out .= "Connection: Close\r\n\r\n";
+        $out .= $postData;
+        fwrite($fp, $out);
+        fclose($fp);
+    }
 }
 
 // ============================

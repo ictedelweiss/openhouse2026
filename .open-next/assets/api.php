@@ -104,12 +104,34 @@ function handleFileUpload($file, $upload_dir, $upload_url_base)
 // HELPER: Send Notification Email
 // ============================
 function sendNotificationEmail($subject, $messageHTML) {
-    $to = 'oh@edelweiss.sch.id';
-    $headers = "MIME-Version: 1.0" . "\r\n";
-    $headers .= "Content-type:text/html;charset=UTF-8" . "\r\n";
-    $headers .= "From: Open House Edelweiss <noreply@eliteacademia.id>" . "\r\n";
+    global $action;
+
+    if ($action === 'internal_send_email') {
+        $to = 'oh@edelweiss.sch.id';
+        $headers = "MIME-Version: 1.0" . "\r\n";
+        $headers .= "Content-type:text/html;charset=UTF-8" . "\r\n";
+        $headers .= "From: Open House Edelweiss <noreply@eliteacademia.id>" . "\r\n";
+        @mail($to, $subject, $messageHTML, $headers);
+        return;
+    }
+
+    $url = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://" . $_SERVER['HTTP_HOST'] . explode('?', $_SERVER['REQUEST_URI'])[0] . "?action=internal_send_email";
+    $postData = json_encode(['subject' => $subject, 'message' => $messageHTML]);
+
+    $ch = curl_init($url);
+    curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
+    curl_setopt($ch, CURLOPT_POSTFIELDS, $postData);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_TIMEOUT_MS, 200);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, [
+        'Content-Type: application/json',
+        'Content-Length: ' . strlen($postData)
+    ]);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
     
-    @mail($to, $subject, $messageHTML, $headers);
+    @curl_exec($ch);
+    @curl_close($ch);
 }
 
 // ============================
@@ -1287,6 +1309,19 @@ if ($action === 'verify_payment' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         echo json_encode(['status' => 'error', 'message' => 'Gagal memperbarui status.']);
     }
+    exit();
+}
+
+// ============================
+// INTERNAL: Async Email Worker
+// ============================
+if ($action === 'internal_send_email' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    $raw_input = file_get_contents('php://input');
+    $input = json_decode($raw_input, true);
+    if ($input && isset($input['subject']) && isset($input['message'])) {
+        sendNotificationEmail($input['subject'], $input['message']);
+    }
+    echo json_encode(['status' => 'success']);
     exit();
 }
 
