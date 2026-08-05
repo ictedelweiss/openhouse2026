@@ -19,7 +19,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 // Optimize Database Connection
-$db_host = 'localhost';
+// Menggunakan 127.0.0.1 alih-alih localhost untuk membypass delay DNS lookup IPv6 (biasanya memakan waktu 5-7 detik)
+$db_host = '127.0.0.1';
 $db_user = 'eliteac1_aris';
 $db_pass = '12345Q@zaqw';
 $db_name = 'eliteac1_openhouse2026';
@@ -42,7 +43,8 @@ $upload_url_base = 'https://eliteacademia.id/openhouse/uploads/';
 
 // Create uploads directory if it doesn't exist
 if (!is_dir($upload_dir)) {
-    mkdir($upload_dir, 0755, true);
+    mkdir($upload_dir, 0777, true);
+    chmod($upload_dir, 0777);
 }
 
 $action = isset($_GET['action']) ? $_GET['action'] : '';
@@ -338,6 +340,12 @@ if ($action === 'register' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $payment_proof_raw = isset($input['payment_proof']) ? $input['payment_proof'] : '';
     $payment_proof = '';
 
+    // Limit file upload size for base64 (2MB file = ~2.66MB base64 overhead)
+    if (!empty($payment_proof_raw) && strlen($payment_proof_raw) > 2.8 * 1024 * 1024) {
+        echo json_encode(['status' => 'error', 'message' => 'Ukuran file bukti pembayaran terlalu besar. Maksimal 2MB.']);
+        exit();
+    }
+
     // Auto-convert Base64 string to physical image file in uploads/ folder
     if (!empty($payment_proof_raw)) {
         if (strpos($payment_proof_raw, 'data:image/') === 0 || strpos($payment_proof_raw, 'data:application/pdf') === 0) {
@@ -359,7 +367,13 @@ if ($action === 'register' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 if (file_put_contents($file_path, $data)) {
                     $payment_proof = $conn->real_escape_string($upload_url_base . $file_name);
+                } else {
+                    echo json_encode(['status' => 'error', 'message' => 'Sistem gagal menyimpan file foto di server. Mohon hubungi admin.']);
+                    exit();
                 }
+            } else {
+                echo json_encode(['status' => 'error', 'message' => 'Format file foto tidak valid.']);
+                exit();
             }
         } else {
             $payment_proof = $conn->real_escape_string($payment_proof_raw);
@@ -384,12 +398,6 @@ if ($action === 'register' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if (empty($level_id) || $slot_number < 0 || empty($child_name) || empty($birth_date) || empty($parent_name) || empty($whatsapp) || empty($email) || empty($attendance_session)) {
         echo json_encode(['status' => 'error', 'message' => 'Mohon lengkapi seluruh bidang data wajib termasuk Email aktif dan Sesi Kedatangan.']);
-        exit();
-    }
-
-    // Limit file upload size for base64 (2MB file = ~2.66MB base64 overhead)
-    if (!empty($payment_proof) && strlen($payment_proof) > 2.8 * 1024 * 1024) {
-        echo json_encode(['status' => 'error', 'message' => 'Ukuran file bukti pembayaran terlalu besar. Maksimal 2MB.']);
         exit();
     }
 
