@@ -108,8 +108,12 @@ function sendNotificationEmail($subject, $messageHTML) {
     $headers = "MIME-Version: 1.0" . "\r\n";
     $headers .= "Content-type:text/html;charset=UTF-8" . "\r\n";
     $headers .= "From: Open House Edelweiss <noreply@eliteacademia.id>" . "\r\n";
-    
-    @mail($to, $subject, $messageHTML, $headers);
+    // Prevent blocking on local XAMPP without SMTP
+    if (isset($_SERVER['HTTP_HOST']) && strpos($_SERVER['HTTP_HOST'], 'localhost') === false && strpos($_SERVER['HTTP_HOST'], '127.0.0.1') === false) {
+        @mail($to, $subject, $messageHTML, $headers);
+    } else {
+        error_log("Simulated Email Sent to: $to | Subject: $subject");
+    }
 }
 
 // ============================

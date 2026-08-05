@@ -211,24 +211,8 @@ export default function RegistrationModal({
       } else {
         setErrorMessage(result.message || 'Gagal menyimpan data pendaftaran.');
       }
-    } catch (err) {
-      confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
-      const prefix = isTransferMenu ? 'TRF' : 'NEW';
-      const dummyCode = `ELC-${prefix}-${level.code.toUpperCase().replace(/\s+/g, '')}-${String(slotNumber).padStart(2, '0')}-${Math.floor(100 + Math.random() * 900)}`;
-      setSubmittedData({ ticketCode: dummyCode });
-      
-      onSuccess(
-        {
-          parent_name: formData.parent_name,
-          whatsapp: formData.whatsapp,
-          email: formData.email,
-          registeredChildren: [
-            ...(savedParentSession?.registeredChildren || []),
-            formData.child_name
-          ]
-        },
-        formData.child_name
-      );
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Terjadi kesalahan jaringan. Silakan coba lagi.');
     } finally {
       setLoading(false);
     }
@@ -265,8 +249,8 @@ export default function RegistrationModal({
 
         {/* Content Body */}
         {submittedData ? (
-          <div className="p-8 text-center flex flex-col items-center">
-            <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mb-4 ring-8 ring-emerald-50">
+          <div className="p-8 text-center flex flex-col items-center max-h-[80vh] overflow-y-auto custom-scrollbar">
+            <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mb-4 ring-8 ring-emerald-50 shrink-0">
               <CheckCircle className="w-10 h-10" />
             </div>
             <h3 className="text-2xl font-bold text-[#002B5B] mb-1 font-poppins">

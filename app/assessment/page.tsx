@@ -590,7 +590,7 @@ export default function AssessmentPortalPage() {
                 <ul className="space-y-2 text-sm text-gray-600">
                   <li className="flex items-start gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" /> Harap hadir 15 menit sebelum sesi Profiling Assessment dimulai.</li>
                   <li className="flex items-start gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" /> Membawa alat tulis dan perlengkapan diri secukupnya.</li>
-                  <li className="flex items-start gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" /> Tunjukkan Kode Tiket <strong>{student.ticket_code}</strong> kepada petugas di lokasi.</li>
+                  <li className="flex items-start gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" /> Tunjukkan Kode Tiket kepada petugas di lokasi.</li>
                 </ul>
               </div>
             )}

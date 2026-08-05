@@ -487,9 +487,9 @@ export default function AdminDashboardPage() {
         };
 
         xhr.onerror = () => {
-          console.log('Mock upload state saved due to network connection');
+          console.error('Network error during upload');
           setUploadProgress(100);
-          resolve(adminUploadFile || 'uploaded_locally');
+          reject(new Error('Koneksi terputus atau file terlalu besar (Max 2MB). Gagal upload bukti pembayaran.'));
         };
 
         xhr.send(uploadData);
