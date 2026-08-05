@@ -290,6 +290,7 @@ export default function OpenHousePage() {
   
   const [parentSession, setParentSession] = useState<SavedParentSession | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [isOnlineBackend, setIsOnlineBackend] = useState<boolean>(false);
 
   const fetchQuotaData = async () => {
@@ -307,6 +308,7 @@ export default function OpenHousePage() {
       console.log('Backend fallback to client state');
     } finally {
       setIsRefreshing(false);
+      setIsLoading(false);
     }
   };
 
@@ -542,7 +544,7 @@ const FIXED_LEVEL_ORDER = [
                       <span className="text-xs font-bold uppercase tracking-wider text-[#293C88]">
                         Kelas {lvl.code}
                       </span>
-                      {loading ? (
+                      {isLoading ? (
                         <span className="bg-slate-200 text-slate-400 text-[10px] font-extrabold px-2 py-0.5 rounded-full uppercase animate-pulse">
                           Memuat...
                         </span>
@@ -564,9 +566,9 @@ const FIXED_LEVEL_ORDER = [
 
                   <div className="mt-4 pt-2 border-t border-slate-200/60 flex items-center justify-between">
                     <span className="text-xs text-slate-500">
-                      {loading ? 'Memuat Data:' : (isFull ? 'Waiting List:' : 'Sisa Kuota:')}
+                      {isLoading ? 'Memuat Data:' : (isFull ? 'Waiting List:' : 'Sisa Kuota:')}
                     </span>
-                    {loading ? (
+                    {isLoading ? (
                       <span className="text-sm font-extrabold text-slate-400 bg-slate-100 px-3 py-0.5 rounded-lg border border-slate-200 animate-pulse">
                         ... / ... Kursi
                       </span>
