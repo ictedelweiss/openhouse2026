@@ -283,6 +283,12 @@ async function handleRequest(request: NextRequest) {
 
       await db.batch(stmts);
 
+      let level_name = level_id;
+      try {
+        const levelObj = await db.prepare("SELECT name FROM levels WHERE id = ?").bind(level_id).first();
+        if (levelObj) level_name = (levelObj as any).name;
+      } catch (e) {}
+
       // --- Send Emails ---
       try {
         const { ctx } = getCloudflareContext();
@@ -295,23 +301,18 @@ async function handleRequest(request: NextRequest) {
               </div>
               <div style="padding: 20px; border: 1px solid #ddd; border-top: none;">
                 <h2 style="color: #002B5B;">Halo Bapak/Ibu dari ${child_name},</h2>
-                <p>Terima kasih telah mendaftar di <strong>Edelweiss Open House & Assessment 2026</strong>.</p>
+                <p>Terima kasih telah mendaftar di <strong>Openhouse Edelweiss School TA 2026-2027</strong>.</p>
                 <p>Pendaftaran Anda telah kami terima dengan detail sebagai berikut:</p>
                 <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
-                  <tr><td style="padding: 8px; border-bottom: 1px solid #eee; width: 40%;"><strong>Kode Tiket</strong></td><td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>${ticket_code}</strong></td></tr>
-                  <tr><td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>Nama Anak</strong></td><td style="padding: 8px; border-bottom: 1px solid #eee;">${child_name}</td></tr>
+                  <tr><td style="padding: 8px; border-bottom: 1px solid #eee; width: 40%;"><strong>Nama Anak</strong></td><td style="padding: 8px; border-bottom: 1px solid #eee;">${child_name}</td></tr>
+                  <tr><td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>Jenjang yang dituju</strong></td><td style="padding: 8px; border-bottom: 1px solid #eee;">${level_name}</td></tr>
                   <tr><td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>Sesi Kehadiran</strong></td><td style="padding: 8px; border-bottom: 1px solid #eee;">${attendance_session}</td></tr>
                 </table>
                 <div style="background-color: #f9f9f9; padding: 15px; border-left: 4px solid #002B5B; margin: 20px 0;">
                   <h3 style="margin-top: 0; color: #002B5B;">Langkah Selanjutnya:</h3>
-                  <p>Silakan akses <strong>Portal Profiling Assessment</strong> di website kami untuk memilih jadwal assessment anak Anda (jika sudah melakukan pembayaran).</p>
-                  <p>Gunakan data berikut untuk login:</p>
-                  <ul style="margin-bottom: 0;">
-                    <li>Email: <strong>${email}</strong></li>
-                    <li>Password: <strong>(Tanggal lahir anak format DDMMYYYY)</strong></li>
-                  </ul>
+                  <p>Silakan datang pada waktu yang tertera di atas dan menunjukkan email berikut kepada staff kami.</p>
                 </div>
-                <p>Jika ada pertanyaan, silakan hubungi Admin kami melalui WhatsApp di <a href="https://wa.me/628118817757">0811-8817-757</a>.</p>
+                <p>Jika ada pertanyaan, silakan hubungi Customer Service kami melalui WhatsApp di <a href="https://wa.me/628118817757">0811-8817-757</a>.</p>
                 <p>Salam hangat,<br><strong>Tim Penerimaan Siswa Baru Edelweiss School</strong></p>
               </div>
             </div>
@@ -319,18 +320,24 @@ async function handleRequest(request: NextRequest) {
 
           const adminSubject = `Pendaftar Baru: ${child_name} - ${ticket_code}`;
           const adminHtml = `
-            <div style="font-family: sans-serif; color: #333;">
-              <p>Halo Admin,</p>
-              <p>Terdapat pendaftar baru untuk Edelweiss Open House 2026.</p>
-              <ul>
-                <li><strong>Kode Tiket:</strong> ${ticket_code}</li>
-                <li><strong>Nama Anak:</strong> ${child_name}</li>
-                <li><strong>Nama Orang Tua:</strong> ${parent_name}</li>
-                <li><strong>WhatsApp:</strong> ${whatsapp}</li>
-                <li><strong>Email:</strong> ${email}</li>
-                <li><strong>Metode Pembayaran:</strong> ${payment_method === 'pay_now' ? 'Transfer' : 'Bayar di Tempat'}</li>
-              </ul>
-              <p>Silakan login ke Dashboard Admin untuk detail lebih lanjut.</p>
+            <div style="font-family: sans-serif; color: #333; max-width: 600px; margin: 0 auto; border: 1px solid #eaeaea; border-radius: 8px; overflow: hidden;">
+              <div style="background-color: #002B5B; padding: 15px 20px;">
+                <h2 style="color: #ffffff; margin: 0; font-size: 18px;">Pendaftar Baru Open House 2026</h2>
+              </div>
+              <div style="padding: 20px;">
+                <p>Halo Admin,</p>
+                <p>Telah masuk pendaftar baru dengan rincian sebagai berikut:</p>
+                <table style="width: 100%; border-collapse: collapse; margin: 15px 0;">
+                  <tr><td style="padding: 10px; border-bottom: 1px solid #eee; width: 35%; color: #666;"><strong>Kode Tiket</strong></td><td style="padding: 10px; border-bottom: 1px solid #eee; font-weight: bold; color: #002B5B;">${ticket_code}</td></tr>
+                  <tr><td style="padding: 10px; border-bottom: 1px solid #eee; color: #666;"><strong>Nama Anak</strong></td><td style="padding: 10px; border-bottom: 1px solid #eee;">${child_name}</td></tr>
+                  <tr><td style="padding: 10px; border-bottom: 1px solid #eee; color: #666;"><strong>Program / Level</strong></td><td style="padding: 10px; border-bottom: 1px solid #eee;">${level_name}</td></tr>
+                  <tr><td style="padding: 10px; border-bottom: 1px solid #eee; color: #666;"><strong>Nama Orang Tua</strong></td><td style="padding: 10px; border-bottom: 1px solid #eee;">${parent_name}</td></tr>
+                  <tr><td style="padding: 10px; border-bottom: 1px solid #eee; color: #666;"><strong>WhatsApp</strong></td><td style="padding: 10px; border-bottom: 1px solid #eee;"><a href="https://wa.me/62${whatsapp.startsWith('0') ? whatsapp.slice(1) : whatsapp}" style="color: #25D366; text-decoration: none; font-weight: bold;">${whatsapp}</a></td></tr>
+                  <tr><td style="padding: 10px; border-bottom: 1px solid #eee; color: #666;"><strong>Email</strong></td><td style="padding: 10px; border-bottom: 1px solid #eee;">${email}</td></tr>
+                  <tr><td style="padding: 10px; border-bottom: 1px solid #eee; color: #666;"><strong>Metode Pembayaran</strong></td><td style="padding: 10px; border-bottom: 1px solid #eee;">${payment_method === 'pay_now' ? '<span style="color: #002B5B; font-weight: bold;">Transfer</span>' : '<span style="color: #e67e22; font-weight: bold;">Bayar di Tempat</span>'}</td></tr>
+                </table>
+                <p style="margin-top: 20px; font-size: 14px; color: #666;">Silakan login ke <a href="https://openhouse2026.ict-636.workers.dev/admin/login" style="color: #002B5B; font-weight: bold;">Dashboard Admin</a> untuk melihat detail lebih lanjut.</p>
+              </div>
             </div>
           `;
 
