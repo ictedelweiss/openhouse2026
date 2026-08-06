@@ -25,5 +25,11 @@
 			"binding": "UPLOAD_BUCKET",
 			"bucket_name": "openhouse-uploads"
 		}
-	]
+	],
+	"vars": {
+		"MS_CLIENT_ID": "5cf8de04-6ded-4d38-9fb2-25ffff992eb7",
+		"MS_TENANT_ID": "6d9ec31b-9635-42f8-a9cc-081a25c4efb5",
+		"MS_CLIENT_SECRET": "",
+		"MS_SENDER_EMAIL": "oh@edelweiss.sch.id"
+	}
 }

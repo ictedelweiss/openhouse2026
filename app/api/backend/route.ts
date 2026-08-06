@@ -4,16 +4,81 @@ import { getCloudflareContext } from '@opennextjs/cloudflare';
 
 // Helper to get D1 and R2 bindings safely in Cloudflare environment
 function getBindings() {
-  let db, bucket;
+  let db, bucket, envObj;
   try {
     const { env } = getCloudflareContext();
+    envObj = env;
     db = (env as any).DB;
     bucket = (env as any).UPLOAD_BUCKET;
   } catch (e) {
+    envObj = process.env;
     db = (process.env.DB || (globalThis as any).DB) as any;
     bucket = (process.env.UPLOAD_BUCKET || (globalThis as any).UPLOAD_BUCKET) as any;
   }
-  return { db, bucket };
+  return { db, bucket, env: envObj };
+}
+
+// MS Graph API Email Helper
+async function sendEmailViaGraphAPI(env: any, to: string, subject: string, htmlBody: string) {
+  try {
+    const tenantId = (env as any)?.MS_TENANT_ID || (process.env as any).MS_TENANT_ID;
+    const clientId = (env as any)?.MS_CLIENT_ID || (process.env as any).MS_CLIENT_ID;
+    const clientSecret = (env as any)?.MS_CLIENT_SECRET || (process.env as any).MS_CLIENT_SECRET;
+    const senderEmail = (env as any)?.MS_SENDER_EMAIL || (process.env as any).MS_SENDER_EMAIL;
+
+    if (!tenantId || !clientId || !clientSecret || !senderEmail) {
+      console.error('Missing MS Graph credentials in environment variables');
+      return false;
+    }
+
+    const tokenUrl = `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`;
+    const tokenBody = new URLSearchParams();
+    tokenBody.append('grant_type', 'client_credentials');
+    tokenBody.append('client_id', clientId);
+    tokenBody.append('client_secret', clientSecret);
+    tokenBody.append('scope', 'https://graph.microsoft.com/.default');
+
+    const tokenRes = await fetch(tokenUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: tokenBody.toString(),
+    });
+
+    if (!tokenRes.ok) {
+      console.error('Failed to get MS Graph token:', await tokenRes.text());
+      return false;
+    }
+    const tokenData = await tokenRes.json();
+    const accessToken = tokenData.access_token;
+
+    const sendUrl = `https://graph.microsoft.com/v1.0/users/${senderEmail}/sendMail`;
+    const emailPayload = {
+      message: {
+        subject: subject,
+        body: { contentType: 'HTML', content: htmlBody },
+        toRecipients: [{ emailAddress: { address: to } }]
+      },
+      saveToSentItems: false
+    };
+
+    const sendRes = await fetch(sendUrl, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(emailPayload)
+    });
+
+    if (!sendRes.ok) {
+      console.error('Failed to send email:', await sendRes.text());
+      return false;
+    }
+    return true;
+  } catch (error) {
+    console.error('Error in sendEmailViaGraphAPI:', error);
+    return false;
+  }
 }
 
 // Generate unique ID for files
@@ -45,7 +110,7 @@ export async function OPTIONS() {
 async function handleRequest(request: NextRequest) {
   const url = new URL(request.url);
   const action = url.searchParams.get('action') || '';
-  const { db, bucket } = getBindings();
+  const { db, bucket, env } = getBindings();
 
   if (!db) {
     return NextResponse.json({ status: 'error', message: 'D1 Database binding not found' }, { status: 500 });
@@ -217,6 +282,66 @@ async function handleRequest(request: NextRequest) {
       );
 
       await db.batch(stmts);
+
+      // --- Send Emails ---
+      try {
+        const { ctx } = getCloudflareContext();
+        if (ctx && ctx.waitUntil) {
+          const parentSubject = "Pendaftaran Berhasil - Edelweiss Open House 2026";
+          const parentHtml = `
+            <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
+              <div style="background-color: #002B5B; padding: 20px; text-align: center;">
+                <h1 style="color: #FED700; margin: 0; font-size: 24px;">Edelweiss School</h1>
+              </div>
+              <div style="padding: 20px; border: 1px solid #ddd; border-top: none;">
+                <h2 style="color: #002B5B;">Halo Bapak/Ibu dari ${child_name},</h2>
+                <p>Terima kasih telah mendaftar di <strong>Edelweiss Open House & Assessment 2026</strong>.</p>
+                <p>Pendaftaran Anda telah kami terima dengan detail sebagai berikut:</p>
+                <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+                  <tr><td style="padding: 8px; border-bottom: 1px solid #eee; width: 40%;"><strong>Kode Tiket</strong></td><td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>${ticket_code}</strong></td></tr>
+                  <tr><td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>Nama Anak</strong></td><td style="padding: 8px; border-bottom: 1px solid #eee;">${child_name}</td></tr>
+                  <tr><td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>Sesi Kehadiran</strong></td><td style="padding: 8px; border-bottom: 1px solid #eee;">${attendance_session}</td></tr>
+                </table>
+                <div style="background-color: #f9f9f9; padding: 15px; border-left: 4px solid #002B5B; margin: 20px 0;">
+                  <h3 style="margin-top: 0; color: #002B5B;">Langkah Selanjutnya:</h3>
+                  <p>Silakan akses <strong>Portal Profiling Assessment</strong> di website kami untuk memilih jadwal assessment anak Anda (jika sudah melakukan pembayaran).</p>
+                  <p>Gunakan data berikut untuk login:</p>
+                  <ul style="margin-bottom: 0;">
+                    <li>Email: <strong>${email}</strong></li>
+                    <li>Password: <strong>(Tanggal lahir anak format DDMMYYYY)</strong></li>
+                  </ul>
+                </div>
+                <p>Jika ada pertanyaan, silakan hubungi Admin kami melalui WhatsApp di <a href="https://wa.me/628118817757">0811-8817-757</a>.</p>
+                <p>Salam hangat,<br><strong>Tim Penerimaan Siswa Baru Edelweiss School</strong></p>
+              </div>
+            </div>
+          `;
+
+          const adminSubject = `Pendaftar Baru: ${child_name} - ${ticket_code}`;
+          const adminHtml = `
+            <div style="font-family: sans-serif; color: #333;">
+              <p>Halo Admin,</p>
+              <p>Terdapat pendaftar baru untuk Edelweiss Open House 2026.</p>
+              <ul>
+                <li><strong>Kode Tiket:</strong> ${ticket_code}</li>
+                <li><strong>Nama Anak:</strong> ${child_name}</li>
+                <li><strong>Nama Orang Tua:</strong> ${parent_name}</li>
+                <li><strong>WhatsApp:</strong> ${whatsapp}</li>
+                <li><strong>Email:</strong> ${email}</li>
+                <li><strong>Metode Pembayaran:</strong> ${payment_method === 'pay_now' ? 'Transfer' : 'Bayar di Tempat'}</li>
+              </ul>
+              <p>Silakan login ke Dashboard Admin untuk detail lebih lanjut.</p>
+            </div>
+          `;
+
+          const adminEmail = (env as any)?.MS_SENDER_EMAIL || (process.env as any).MS_SENDER_EMAIL || "oh@edelweiss.sch.id";
+
+          ctx.waitUntil(sendEmailViaGraphAPI(env, email, parentSubject, parentHtml));
+          ctx.waitUntil(sendEmailViaGraphAPI(env, adminEmail, adminSubject, adminHtml));
+        }
+      } catch (e) {
+        console.error("Failed to schedule emails", e);
+      }
 
       return NextResponse.json({
         status: 'success',
