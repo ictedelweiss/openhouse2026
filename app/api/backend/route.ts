@@ -606,7 +606,63 @@ async function handleRequest(request: NextRequest) {
     if (action === 'verify_payment') {
       const input = await request.json() as any;
       await db.prepare("UPDATE registrations SET payment_status = ? WHERE id = ?").bind(input.status, input.id).run();
-      return NextResponse.json({ status: 'success', message: 'Diperbarui.' });
+
+      if (input.status === 'verified') {
+        const { results } = await db.prepare("SELECT child_name, parent_name, email, birth_date, ticket_code FROM registrations WHERE id = ?").bind(input.id).all();
+        if (results && results.length > 0) {
+          const reg = results[0] as any;
+          const [yyyy, mm, dd] = reg.birth_date.split('-');
+          const password = `${dd}${mm}${yyyy}`;
+          
+          const emailSubject = `Pembayaran Terverifikasi - Assessment Open House Edelweiss 2026`;
+          const emailHtml = `
+            <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden;">
+              <div style="background-color: #002B5B; color: white; padding: 20px; text-align: center;">
+                <h2 style="margin: 0;">Pembayaran Terverifikasi!</h2>
+              </div>
+              <div style="padding: 30px; color: #333; line-height: 1.6;">
+                <p>Halo Bapak/Ibu <strong>${reg.parent_name}</strong>,</p>
+                <p>Terima kasih, pembayaran pendaftaran untuk ananda <strong>${reg.child_name}</strong> telah berhasil kami verifikasi.</p>
+                
+                <div style="background-color: #f8fafc; border: 1px dashed #cbd5e1; padding: 20px; border-radius: 8px; margin: 25px 0;">
+                  <h3 style="margin-top: 0; color: #002B5B; text-align: center;">Informasi Assessment Mandiri</h3>
+                  <p style="text-align: center; font-size: 14px; color: #64748b; margin-bottom: 20px;">Silakan login ke portal assessment menggunakan kredensial berikut:</p>
+                  
+                  <table style="width: 100%; border-collapse: collapse;">
+                    <tr>
+                      <td style="padding: 10px; border-bottom: 1px solid #eee; width: 40%; color: #64748b;"><strong>Link Portal</strong></td>
+                      <td style="padding: 10px; border-bottom: 1px solid #eee;">
+                        <a href="https://openhouse.edelweiss.sch.id/assessment" style="color: #002B5B; font-weight: bold;">openhouse.edelweiss.sch.id/assessment</a>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="padding: 10px; border-bottom: 1px solid #eee; color: #64748b;"><strong>Email / Username</strong></td>
+                      <td style="padding: 10px; border-bottom: 1px solid #eee; font-weight: bold;">${reg.email}</td>
+                    </tr>
+                    <tr>
+                      <td style="padding: 10px; border-bottom: 1px solid #eee; color: #64748b;"><strong>Password</strong></td>
+                      <td style="padding: 10px; border-bottom: 1px solid #eee; font-weight: bold; color: #e67e22;">
+                        ${password} 
+                        <span style="font-size: 11px; font-weight: normal; color: #94a3b8; display: block;">(Format: DDMMYYYY dari tanggal lahir)</span>
+                      </td>
+                    </tr>
+                  </table>
+                </div>
+
+                <p style="text-align: center; margin-top: 30px;">
+                  <a href="https://openhouse.edelweiss.sch.id/assessment" style="background-color: #002B5B; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Menuju Portal Assessment</a>
+                </p>
+                
+                <p style="margin-top: 30px; font-size: 14px; color: #666; text-align: center;">Jika ada pertanyaan, silakan hubungi Customer Service kami melalui WhatsApp di <a href="https://wa.me/628118817757">0811-8817-757</a>.</p>
+              </div>
+            </div>
+          `;
+          
+          await sendEmailViaGraphAPI(reg.email, emailSubject, emailHtml, env);
+        }
+      }
+
+      return NextResponse.json({ status: 'success', message: 'Diperbarui dan email terkirim (jika diverifikasi).' });
     }
 
     return NextResponse.json({ status: 'error', message: 'Invalid action' });

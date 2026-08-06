@@ -71,6 +71,7 @@ export default function AdminDashboardPage() {
   const [registrations, setRegistrations] = useState<RegistrationRecord[]>(INITIAL_MOCK_REGISTRATIONS);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterCategory, setFilterCategory] = useState<string>('all');
+  const [filterJenjang, setFilterJenjang] = useState<string>('all');
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [isLiveDb, setIsLiveDb] = useState(false);
@@ -578,6 +579,15 @@ export default function AdminDashboardPage() {
     document.body.removeChild(link);
   };
 
+  const getJenjang = (levelName: string) => {
+    if (!levelName) return 'lainnya';
+    const n = levelName.toLowerCase();
+    if (n.includes('kiddy') || n.includes('kinder') || n.includes('preschool') || n.includes('k2')) return 'kiddy';
+    if (n.includes('primary')) return 'primary';
+    if (n.includes('secondary')) return 'secondary';
+    return 'lainnya';
+  };
+
   const filteredRegistrations = registrations.filter((r) => {
     const matchesSearch =
       r.child_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -591,13 +601,21 @@ export default function AdminDashboardPage() {
       r.level_category === filterCategory ||
       (filterCategory === 'transfer' && r.registration_type === 'transfer');
 
-    return matchesSearch && matchesCategory;
+    const matchesJenjang =
+      filterJenjang === 'all' ||
+      getJenjang(r.level_name) === filterJenjang;
+
+    return matchesSearch && matchesCategory && matchesJenjang;
   });
 
   const totalCount = registrations.length;
   const newStudentsCount = registrations.filter((r) => r.registration_type === 'new').length;
   const transferStudentsCount = registrations.filter((r) => r.registration_type === 'transfer').length;
   const homeschoolingCount = registrations.filter((r) => r.level_category === 'homeschooling').length;
+
+  const kiddyCount = registrations.filter((r) => getJenjang(r.level_name) === 'kiddy').length;
+  const primaryCount = registrations.filter((r) => getJenjang(r.level_name) === 'primary').length;
+  const secondaryCount = registrations.filter((r) => getJenjang(r.level_name) === 'secondary').length;
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] font-poppins text-slate-800 pb-16">
@@ -667,6 +685,27 @@ export default function AdminDashboardPage() {
           </div>
         </div>
 
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-200/80 flex items-center justify-between">
+            <div>
+              <span className="text-xs font-semibold text-slate-500 block uppercase">Kiddy / Preschool</span>
+              <span className="text-xl font-extrabold text-blue-600 font-poppins">{kiddyCount} Siswa</span>
+            </div>
+          </div>
+          <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-200/80 flex items-center justify-between">
+            <div>
+              <span className="text-xs font-semibold text-slate-500 block uppercase">Primary</span>
+              <span className="text-xl font-extrabold text-rose-600 font-poppins">{primaryCount} Siswa</span>
+            </div>
+          </div>
+          <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-200/80 flex items-center justify-between">
+            <div>
+              <span className="text-xs font-semibold text-slate-500 block uppercase">Secondary</span>
+              <span className="text-xl font-extrabold text-indigo-600 font-poppins">{secondaryCount} Siswa</span>
+            </div>
+          </div>
+        </div>
+
         {/* Action Toolbar */}
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-200/80 flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="relative w-full md:w-80">
@@ -716,6 +755,41 @@ export default function AdminDashboardPage() {
               </button>
             </div>
 
+            <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl">
+              <button
+                onClick={() => setFilterJenjang('all')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                  filterJenjang === 'all' ? 'bg-[#002B5B] text-white' : 'text-slate-600'
+                }`}
+              >
+                Semua Jenjang
+              </button>
+              <button
+                onClick={() => setFilterJenjang('kiddy')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                  filterJenjang === 'kiddy' ? 'bg-[#002B5B] text-white' : 'text-slate-600'
+                }`}
+              >
+                Kiddy
+              </button>
+              <button
+                onClick={() => setFilterJenjang('primary')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                  filterJenjang === 'primary' ? 'bg-[#002B5B] text-white' : 'text-slate-600'
+                }`}
+              >
+                Primary
+              </button>
+              <button
+                onClick={() => setFilterJenjang('secondary')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                  filterJenjang === 'secondary' ? 'bg-[#002B5B] text-white' : 'text-slate-600'
+                }`}
+              >
+                Secondary
+              </button>
+            </div>
+
             <button
               onClick={fetchRegistrations}
               disabled={isRefreshing}
@@ -747,6 +821,7 @@ export default function AdminDashboardPage() {
             <table className="w-full text-left text-xs text-slate-700">
               <thead className="bg-slate-100/70 text-slate-600 uppercase text-[10px] font-bold tracking-wider border-b border-slate-200">
                 <tr>
+                  <th className="py-3.5 px-4 w-12 text-center">No.</th>
                   <th className="py-3.5 px-4">Nama Anak</th>
                   <th className="py-3.5 px-4">Tgl Lahir &amp; JK</th>
                   <th className="py-3.5 px-4">Kelas &amp; Tipe</th>
@@ -759,13 +834,16 @@ export default function AdminDashboardPage() {
               <tbody className="divide-y divide-slate-100 font-medium">
                 {filteredRegistrations.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="py-8 text-center text-slate-400">
+                    <td colSpan={8} className="py-8 text-center text-slate-400">
                       Tidak ada data pendaftaran yang sesuai pencarian.
                     </td>
                   </tr>
                 ) : (
-                  filteredRegistrations.map((item) => (
+                  filteredRegistrations.map((item, index) => (
                     <tr key={item.id} className="hover:bg-slate-50/80 transition">
+                      <td className="py-3.5 px-4 text-center text-slate-500 font-bold">
+                        {index + 1}
+                      </td>
                       <td className="py-3.5 px-4">
                         <strong className="text-slate-900 font-bold block">{item.child_name}</strong>
                       </td>
