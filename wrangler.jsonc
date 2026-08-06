@@ -1,16 +1,29 @@
 {
-  "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "openhouse2026",
-  "compatibility_date": "2026-07-30",
-  "main": ".open-next/worker.js",
-  "assets": {
-    "directory": ".open-next/assets",
-    "binding": "ASSETS"
-  },
-  "observability": {
-    "enabled": true
-  },
-  "compatibility_flags": [
-    "nodejs_compat"
-  ]
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "openhouse2026",
+	"compatibility_date": "2026-07-30",
+	"main": ".open-next/worker.js",
+	"assets": {
+		"directory": ".open-next/assets",
+		"binding": "ASSETS"
+	},
+	"observability": {
+		"enabled": true
+	},
+	"compatibility_flags": [
+		"nodejs_compat"
+	],
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "openhouse_db",
+			"database_id": "2a2e1f19-7aec-477e-8835-eb7b5a1896f1"
+		}
+	],
+	"r2_buckets": [
+		{
+			"binding": "UPLOAD_BUCKET",
+			"bucket_name": "openhouse-uploads"
+		}
+	]
 }

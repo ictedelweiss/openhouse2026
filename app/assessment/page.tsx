@@ -240,6 +240,20 @@ export default function AssessmentPortalPage() {
     } catch { return ''; }
   };
 
+  const kiddyLocation = {
+    name: "Gedung TK Edelweiss",
+    address: "Jl. Dr. Ratna No.104, RT.011/RW.001, Jatibening, Kec. Pd. Gede, Kota Bks, Jawa Barat 17412",
+    maps: "https://maps.app.goo.gl/y1BUa3e4c1D1SVJv8"
+  };
+
+  const mainLocation = {
+    name: "Lapangan Tenis Edelweiss",
+    address: "Jl. Ratna - Jatibening No.18A, RT.010/RW.013, Jatibening, Kec. Pd. Gede, Kota Bks, Jawa Barat 17412",
+    maps: "https://maps.app.goo.gl/HtMfRPXavZuxLejT8"
+  };
+
+  const getLocation = (cat: string) => cat === 'kiddy' ? kiddyLocation : mainLocation;
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Loading Overlay */}
@@ -446,6 +460,13 @@ export default function AssessmentPortalPage() {
                       </div>
                       <p className="text-gray-900 font-semibold text-sm">{formatDayName(allocation.date)}, {formatDateIndo(allocation.date)}</p>
                       <p className="text-gray-700 text-xs mt-0.5 font-medium">Pukul {formatTime(allocation.start_time)} – {formatTime(allocation.end_time)} WIB</p>
+                      <a href={getLocation(category).maps} target="_blank" rel="noopener noreferrer" className="inline-flex items-start gap-1 mt-2 p-2 bg-white rounded-lg border border-emerald-200 hover:border-emerald-400 transition group">
+                        <MapPin className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0 mt-0.5 group-hover:text-emerald-700" />
+                        <div>
+                          <p className="text-[10px] font-bold text-gray-800 leading-tight">{getLocation(category).name}</p>
+                          <p className="text-[9px] text-gray-500 leading-tight mt-0.5">{getLocation(category).address}</p>
+                        </div>
+                      </a>
                     </div>
                   ) : (
                     <div className="flex items-center gap-1.5 text-amber-800 font-semibold">
@@ -528,8 +549,8 @@ export default function AssessmentPortalPage() {
                       >
                         {/* Card Header */}
                         <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-1.5 text-xs text-gray-500 font-medium">
-                            <MapPin className="w-3.5 h-3.5" /> Kampus Edelweiss
+                          <div className="flex items-center gap-1.5 text-[10px] text-gray-600 font-bold px-2 py-1 bg-gray-100 rounded-md">
+                            <MapPin className="w-3 h-3 text-[#002B5B]" /> {getLocation(category).name}
                           </div>
                           {isSelected ? (
                             <span className="text-[10px] font-bold bg-emerald-500 text-white px-2 py-0.5 rounded-full">JADWAL ANDA</span>
@@ -587,7 +608,15 @@ export default function AssessmentPortalPage() {
                 <h4 className="font-bold text-gray-900 text-sm flex items-center gap-2 mb-3">
                   <ShieldCheck className="w-4 h-4 text-[#002B5B]" /> Petunjuk Pelaksanaan
                 </h4>
-                <ul className="space-y-2 text-sm text-gray-600">
+                <ul className="space-y-3 text-sm text-gray-600">
+                  <li className="flex items-start gap-2">
+                    <MapPin className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" /> 
+                    <div>
+                      <span className="font-semibold text-gray-800">Lokasi: {getLocation(category).name}</span>
+                      <p className="text-xs mt-0.5 text-gray-500 leading-relaxed">{getLocation(category).address}</p>
+                      <a href={getLocation(category).maps} target="_blank" rel="noopener noreferrer" className="text-xs font-bold text-blue-600 hover:underline inline-flex items-center gap-1 mt-1">Buka Google Maps <ChevronRight className="w-3 h-3"/></a>
+                    </div>
+                  </li>
                   <li className="flex items-start gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" /> Harap hadir 15 menit sebelum sesi Profiling Assessment dimulai.</li>
                   <li className="flex items-start gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" /> Membawa alat tulis dan perlengkapan diri secukupnya.</li>
                   <li className="flex items-start gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" /> Tunjukkan Kode Tiket kepada petugas di lokasi.</li>

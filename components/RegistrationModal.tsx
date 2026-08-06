@@ -32,6 +32,7 @@ export default function RegistrationModal({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [submittedData, setSubmittedData] = useState<{ ticketCode: string } | null>(null);
   const [paymentProofFileName, setPaymentProofFileName] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   const isWaiting = isWaitingList || slotNumber === 0;
 
@@ -115,19 +116,19 @@ export default function RegistrationModal({
         const ctx = canvas.getContext('2d');
         ctx?.drawImage(img, 0, 0, width, height);
 
-        const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7); // 70% quality compression
-        setFormData((prev) => ({
-          ...prev,
-          payment_proof: compressedBase64
-        }));
-        setUploadingFile(false);
+        canvas.toBlob((blob) => {
+          if (blob) {
+            const compressedFile = new File([blob], file.name, { type: 'image/jpeg' });
+            setSelectedFile(compressedFile);
+            setFormData((prev) => ({ ...prev, payment_proof: 'local_file_pending' }));
+          }
+          setUploadingFile(false);
+        }, 'image/jpeg', 0.7);
       };
 
       img.onerror = () => {
-        setFormData((prev) => ({
-          ...prev,
-          payment_proof: event.target?.result as string
-        }));
+        setSelectedFile(file);
+        setFormData((prev) => ({ ...prev, payment_proof: 'local_file_pending' }));
         setUploadingFile(false);
       };
 
@@ -170,6 +171,28 @@ export default function RegistrationModal({
     }
 
     try {
+      let finalPaymentProof = formData.payment_proof;
+
+      // Fast track upload via FormData before submitting payload
+      if (selectedFile) {
+        const formDataUpload = new FormData();
+        formDataUpload.append('file', selectedFile);
+
+        const uploadRes = await fetch(`${apiBaseUrl}?action=upload_file`, {
+          method: 'POST',
+          body: formDataUpload
+        });
+
+        const uploadData = await uploadRes.json();
+        if (uploadData.status === 'success') {
+          finalPaymentProof = uploadData.file_url;
+        } else {
+          setErrorMessage(uploadData.message || 'Gagal mengunggah bukti pembayaran.');
+          setLoading(false);
+          return;
+        }
+      }
+
       const isWaiting = isWaitingList || slotNumber === 0;
       const defaultSession = isWaiting ? 'Waiting List (Antrean Kuota)' : 'Sabtu, 15 Agustus 2026 (08.00 - 10.00)';
       
@@ -181,7 +204,8 @@ export default function RegistrationModal({
           ? formData.attendance_session 
           : defaultSession,
         payment_method: isWaiting ? 'pay_onsite' : (formData.payment_method || 'pay_now'),
-        registration_type: isWaiting ? 'waiting_list' : (formData.registration_type || 'new')
+        registration_type: isWaiting ? 'waiting_list' : (formData.registration_type || 'new'),
+        payment_proof: finalPaymentProof === 'local_file_pending' ? null : finalPaymentProof
       };
 
       const res = await fetch(`${apiBaseUrl}?action=register`, {
