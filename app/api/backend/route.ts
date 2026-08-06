@@ -336,7 +336,7 @@ async function handleRequest(request: NextRequest) {
                   <tr><td style="padding: 10px; border-bottom: 1px solid #eee; color: #666;"><strong>Email</strong></td><td style="padding: 10px; border-bottom: 1px solid #eee;">${email}</td></tr>
                   <tr><td style="padding: 10px; border-bottom: 1px solid #eee; color: #666;"><strong>Metode Pembayaran</strong></td><td style="padding: 10px; border-bottom: 1px solid #eee;">${payment_method === 'pay_now' ? '<span style="color: #002B5B; font-weight: bold;">Transfer</span>' : '<span style="color: #e67e22; font-weight: bold;">Bayar di Tempat</span>'}</td></tr>
                 </table>
-                <p style="margin-top: 20px; font-size: 14px; color: #666;">Silakan login ke <a href="https://openhouse2026.ict-636.workers.dev/admin/login" style="color: #002B5B; font-weight: bold;">Dashboard Admin</a> untuk melihat detail lebih lanjut.</p>
+                <p style="margin-top: 20px; font-size: 14px; color: #666;">Silakan login ke <a href="https://openhouse.edelweiss.sch.id/admin/login" style="color: #002B5B; font-weight: bold;">Dashboard Admin</a> untuk melihat detail lebih lanjut.</p>
               </div>
             </div>
           `;
