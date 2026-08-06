@@ -288,8 +288,8 @@ export default function RegistrationModal({
 
             {/* Kartu Ringkasan Pendaftaran */}
             <div className="bg-slate-50 p-5 rounded-2xl border-2 border-dashed border-[#293C88]/30 w-full max-w-md text-left mb-6 relative">
-              <div className="flex justify-end mb-3 pb-3 border-b border-slate-200">
-                <div className={`px-3 py-1 rounded-lg text-center ${isWaiting ? 'bg-amber-500 text-white' : 'bg-[#293C88] text-white'}`}>
+              <div className="flex justify-center mb-3 pb-3 border-b border-slate-200">
+                <div className={`px-4 py-1.5 rounded-lg text-center shadow-sm w-1/2 ${isWaiting ? 'bg-amber-500 text-white' : 'bg-[#293C88] text-white'}`}>
                   <div className="text-[9px] uppercase">STATUS</div>
                   <div className="text-xs font-extrabold text-[#FED700]">{isWaiting ? 'WAITING LIST' : 'TERVERIFIKASI'}</div>
                 </div>
