@@ -599,18 +599,33 @@ async function handleRequest(request: NextRequest) {
       if (!st) return NextResponse.json({ status: 'error', message: 'Email tidak ditemukan.' });
 
       const pwdClean = password.replace(/\D/g, '');
-      const dbBirth = (st as any).birth_date; // YYYY-MM-DD
-      const [bYear, bMonth, bDay] = dbBirth.split('-');
-      const validFormats = [
-        dbBirth,                             // 2017-08-15
-        `${bDay}${bMonth}${bYear}`,           // 15082017 (DDMMYYYY)
-        `${bYear}${bMonth}${bDay}`,           // 20170815 (YYYYMMDD)
-        `${bDay}-${bMonth}-${bYear}`,          // 15-08-2017 (DD-MM-YYYY)
-        `${bDay}/${bMonth}/${bYear}`           // 15/08/2017 (DD/MM/YYYY)
-      ];
+      const dbBirth = ((st as any).birth_date || '').toString().trim();
+      const dbBirthClean = dbBirth.replace(/\D/g, '');
+      
+      let match = false;
+      if (pwdClean === dbBirthClean) match = true;
+      else if (pwdClean.length === 8 && dbBirthClean.length === 8) {
+        // If DB is YYYYMMDD (or vice versa) and user inputs DDMMYYYY
+        const pDD = pwdClean.slice(0, 2);
+        const pMM = pwdClean.slice(2, 4);
+        const pYYYY = pwdClean.slice(4, 8);
+        
+        const dYYYY = dbBirthClean.slice(0, 4);
+        const dMM = dbBirthClean.slice(4, 6);
+        const dDD = dbBirthClean.slice(6, 8);
+        
+        if (pDD === dDD && pMM === dMM && pYYYY === dYYYY) match = true;
+        
+        // If DB is DDMMYYYY and user inputs YYYYMMDD
+        const dDD_alt = dbBirthClean.slice(0, 2);
+        const dMM_alt = dbBirthClean.slice(2, 4);
+        const dYYYY_alt = dbBirthClean.slice(4, 8);
+        
+        if (pYYYY === dYYYY_alt && pMM === dMM_alt && pDD === dDD_alt) match = true;
+      }
 
-      if (!validFormats.includes(password.trim()) && pwdClean !== `${bDay}${bMonth}${bYear}` && pwdClean !== `${bYear}${bMonth}${bDay}`) {
-        return NextResponse.json({ status: 'error', message: 'Password salah. Gunakan tanggal lahir anak (contoh: 15082017 atau YYYY-MM-DD).' });
+      if (!match) {
+        return NextResponse.json({ status: 'error', message: 'Password salah. Gunakan 8 digit tanggal lahir anak (contoh: 15082017).' });
       }
 
       if (!(st as any).payment_proof) return NextResponse.json({ status: 'payment_required', message: 'Belum bayar', student: st });
