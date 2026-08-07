@@ -14,10 +14,10 @@ const INITIAL_MOCK_LEVELS: LevelQuota[] = [
     code: 'Kiddy 1',
     name: 'Edelweiss Formal School - Kiddy 1 (Preschool)',
     category: 'formal',
-    quota: 20,
+    quota: 16,
     booked: 0,
-    available: 20,
-    slots: Array.from({ length: 20 }, (_, i) => ({
+    available: 16,
+    slots: Array.from({ length: 16 }, (_, i) => ({
       number: i + 1,
       status: 'available',
       holder: null
@@ -28,13 +28,13 @@ const INITIAL_MOCK_LEVELS: LevelQuota[] = [
     code: 'Kiddy 2',
     name: 'Edelweiss Formal School - Kiddy 2 (Preschool)',
     category: 'formal',
-    quota: 25,
-    booked: 4,
-    available: 21,
-    slots: Array.from({ length: 25 }, (_, i) => ({
+    quota: 24,
+    booked: 0,
+    available: 24,
+    slots: Array.from({ length: 24 }, (_, i) => ({
       number: i + 1,
-      status: [2, 5, 9, 12].includes(i + 1) ? 'booked' : 'available',
-      holder: [2, 5, 9, 12].includes(i + 1) ? 'Siswa Terdaftar' : null
+      status: 'available',
+      holder: null
     }))
   },
   {
@@ -42,27 +42,13 @@ const INITIAL_MOCK_LEVELS: LevelQuota[] = [
     code: 'Kindergarten 1',
     name: 'Edelweiss Formal School - Kindergarten 1 (Preschool)',
     category: 'formal',
-    quota: 40,
-    booked: 6,
-    available: 34,
-    slots: Array.from({ length: 40 }, (_, i) => ({
+    quota: 60,
+    booked: 0,
+    available: 60,
+    slots: Array.from({ length: 60 }, (_, i) => ({
       number: i + 1,
-      status: [3, 4, 7, 10, 15, 18].includes(i + 1) ? 'booked' : 'available',
-      holder: [3, 4, 7, 10, 15, 18].includes(i + 1) ? 'Siswa Terdaftar' : null
-    }))
-  },
-  {
-    id: 'fs-k2',
-    code: 'Kindergarten 2',
-    name: 'Edelweiss Formal School - Kindergarten 2 (Preschool)',
-    category: 'formal',
-    quota: 40,
-    booked: 5,
-    available: 35,
-    slots: Array.from({ length: 40 }, (_, i) => ({
-      number: i + 1,
-      status: [1, 6, 11, 14, 20].includes(i + 1) ? 'booked' : 'available',
-      holder: [1, 6, 11, 14, 20].includes(i + 1) ? 'Siswa Terdaftar' : null
+      status: 'available',
+      holder: null
     }))
   },
   {
@@ -71,12 +57,12 @@ const INITIAL_MOCK_LEVELS: LevelQuota[] = [
     name: 'Edelweiss Formal School - Primary 1 (Kelas 1 SD)',
     category: 'formal',
     quota: 40,
-    booked: 8,
-    available: 32,
+    booked: 0,
+    available: 40,
     slots: Array.from({ length: 40 }, (_, i) => ({
       number: i + 1,
-      status: [1, 2, 5, 8, 12, 15, 22, 25].includes(i + 1) ? 'booked' : 'available',
-      holder: [1, 2, 5, 8, 12, 15, 22, 25].includes(i + 1) ? 'Siswa Terdaftar' : null
+      status: 'available',
+      holder: null
     }))
   },
   {
@@ -84,13 +70,13 @@ const INITIAL_MOCK_LEVELS: LevelQuota[] = [
     code: 'Secondary 1',
     name: 'Edelweiss Formal School - Secondary 1 (Kelas 7 SMP)',
     category: 'formal',
-    quota: 30,
-    booked: 4,
-    available: 26,
-    slots: Array.from({ length: 30 }, (_, i) => ({
+    quota: 16,
+    booked: 0,
+    available: 16,
+    slots: Array.from({ length: 16 }, (_, i) => ({
       number: i + 1,
-      status: [2, 5, 9, 14].includes(i + 1) ? 'booked' : 'available',
-      holder: [2, 5, 9, 14].includes(i + 1) ? 'Siswa Terdaftar' : null
+      status: 'available',
+      holder: null
     }))
   },
 
