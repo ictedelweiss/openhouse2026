@@ -14,7 +14,7 @@ interface RegistrationRecord {
   level_code: string;
   level_category: string;
   slot_number: number;
-  registration_type: 'new' | 'transfer';
+  registration_type: 'new' | 'transfer' | 'internal';
   child_name: string;
   birth_date: string;
   gender: 'L' | 'P';
@@ -548,6 +548,70 @@ export default function AdminDashboardPage() {
     }
   };
 
+  const [isImportingStudents, setIsImportingStudents] = useState(false);
+
+  const handleDownloadStudentTemplate = () => {
+    const csvContent = 'nama_anak,tgl_lahir,jk,nama_orang_tua,whatsapp,email,kelas,tipe_pendaftaran,sekolah_asal\nBudi Santoso,2018-05-12,L,Santoso,081234567890,budi@gmail.com,fs-k1,internal,Edelweiss School Internal\nSiti Rahma,2017-10-20,P,Rahman,089876543210,siti@gmail.com,fs-p1,new,TK Pertiwi';
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = 'template_import_siswa.csv';
+    link.click();
+  };
+
+  const handleImportStudentsCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsImportingStudents(true);
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      const text = event.target?.result as string;
+      const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l);
+      if (lines.length < 2) {
+        alert('File CSV kosong atau tidak memiliki data.');
+        setIsImportingStudents(false);
+        return;
+      }
+      
+      const headers = lines[0].toLowerCase().split(',').map(h => h.trim().replace(/^"|"$/g, ''));
+      const studentsToImport = [];
+      
+      for (let i = 1; i < lines.length; i++) {
+        // Simple CSV splitter handling quoted values
+        const values = lines[i].split(',').map(v => v.trim().replace(/^"|"$/g, ''));
+        const rowData: Record<string, string> = {};
+        headers.forEach((h, index) => {
+          if (values[index] !== undefined) rowData[h] = values[index];
+        });
+        studentsToImport.push(rowData);
+      }
+      
+      try {
+        const res = await fetch(`${API_BASE_URL}?action=import_students`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ students: studentsToImport })
+        });
+        const json = await res.json();
+        alert(json.message);
+        if (json.status === 'success') {
+          fetchRegistrations();
+        }
+      } catch (err) {
+        alert('Terjadi kesalahan jaringan saat mengimpor data siswa.');
+      } finally {
+        setIsImportingStudents(false);
+        e.target.value = ''; // reset input
+      }
+    };
+    reader.onerror = () => {
+      alert('Gagal membaca file CSV.');
+      setIsImportingStudents(false);
+    };
+    reader.readAsText(file);
+  };
+
   const handleExportCSV = () => {
     if (registrations.length === 0) {
       alert('Tidak ada data pendaftaran untuk di-export.');
@@ -557,7 +621,7 @@ export default function AdminDashboardPage() {
     const headers = ['Kode Registrasi', 'Tipe', 'Nama Anak', 'Tgl Lahir', 'JK', 'Nama Orang Tua', 'No WhatsApp', 'Email', 'Kelas', 'Sekolah Asal', 'Sesi Kedatangan', 'Metode Bayar', 'Status Bukti Bayar', 'Waktu Daftar'];
     const rows = registrations.map((r) => [
       `"${r.ticket_code}"`,
-      `"${r.registration_type === 'transfer' ? 'Siswa Pindahan' : 'Siswa Baru'}"`,
+      `"${r.registration_type === 'transfer' ? 'Siswa Pindahan' : (r.registration_type === 'internal' ? 'Siswa Internal' : 'Siswa Baru')}"`,
       `"${r.child_name}"`,
       `"${r.birth_date}"`,
       `"${r.gender}"`,
@@ -803,6 +867,26 @@ export default function AdminDashboardPage() {
             </button>
 
             <button
+              onClick={handleDownloadStudentTemplate}
+              className="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 border border-slate-300"
+              title="Unduh Template CSV Import Siswa"
+            >
+              <Download className="w-3.5 h-3.5" /> Template CSV
+            </button>
+
+            <label className="bg-[#002B5B] hover:bg-blue-900 text-white px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm cursor-pointer relative">
+              {isImportingStudents ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4 text-[#FED700]" />}
+              <span>{isImportingStudents ? 'Mengimpor...' : 'Impor Siswa Massal'}</span>
+              <input
+                type="file"
+                accept=".csv"
+                onChange={handleImportStudentsCSV}
+                disabled={isImportingStudents}
+                className="hidden"
+              />
+            </label>
+
+            <button
               onClick={handleExportCSV}
               className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm"
             >
@@ -861,7 +945,11 @@ export default function AdminDashboardPage() {
                       <td className="py-3.5 px-4">
                         <span className="font-bold text-[#002B5B] block">{item.level_code || item.level_name}</span>
                         <div className="flex items-center gap-1 mt-0.5">
-                          {Number(item.slot_number) === 0 ? (
+                          {item.registration_type === 'internal' ? (
+                            <span className="inline-block text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-800 border border-indigo-200">
+                              Siswa Internal
+                            </span>
+                          ) : Number(item.slot_number) === 0 ? (
                             <span className="inline-block text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-amber-500 text-white">
                               Waiting List
                             </span>

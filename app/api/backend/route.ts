@@ -377,6 +377,7 @@ async function handleRequest(request: NextRequest) {
     }
 
     // 6. DELETE REGISTRATION
+    // 6. DELETE REGISTRATION
     if (action === 'delete_registration' && request.method === 'POST') {
       const input = await request.json() as any;
       const id = parseInt(input.id) || 0;
@@ -396,6 +397,80 @@ async function handleRequest(request: NextRequest) {
         }
       }
       return NextResponse.json({ status: 'success', message: 'Dihapus.' });
+    }
+
+    // 6b. IMPORT STUDENTS MASSAL (SISWA INTERNAL & EKSTERNAL)
+    if (action === 'import_students' && request.method === 'POST') {
+      const input = await request.json() as any;
+      if (!input.students || !Array.isArray(input.students)) {
+        return NextResponse.json({ status: 'error', message: 'Format data siswa tidak valid.' });
+      }
+
+      const { results: levels } = await db.prepare("SELECT id, name, code FROM levels").all();
+      const levelsList = levels as any[];
+
+      const stmts = [];
+      let successCount = 0;
+
+      for (const row of input.students) {
+        const childName = (row.nama_anak || row.child_name || '').trim();
+        const birthDate = (row.tgl_lahir || row.birth_date || '').trim();
+        if (!childName || !birthDate) continue;
+
+        const email = (row.email || `${childName.toLowerCase().replace(/[^a-z0-9]/g, '')}@edelweiss.sch.id`).trim();
+        const whatsapp = (row.whatsapp || row.no_wa || '080000000000').trim();
+        const parentName = (row.nama_orang_tua || row.parent_name || 'Orang Tua Siswa').trim();
+        const gender = (row.jk || row.gender || 'L').toUpperCase().startsWith('P') ? 'P' : 'L';
+        const rawLevel = (row.kelas || row.level_id || row.level || 'fs-k1').trim().toLowerCase();
+        
+        let levelId = 'fs-k1';
+        const foundLvl = levelsList.find(l => 
+          l.id.toLowerCase() === rawLevel || 
+          l.code.toLowerCase() === rawLevel || 
+          l.name.toLowerCase().includes(rawLevel)
+        );
+        if (foundLvl) levelId = foundLvl.id;
+
+        const regType = (row.tipe_pendaftaran || row.registration_type || 'internal').trim().toLowerCase();
+        const isInternal = regType.includes('internal');
+        const isTransfer = regType.includes('pindahan') || regType.includes('transfer');
+        const finalRegType = isInternal ? 'internal' : (isTransfer ? 'transfer' : 'new');
+
+        const prefix = isInternal ? 'INT' : (isTransfer ? 'TRF' : 'NEW');
+        const ticketCode = `ELC-${prefix}-WL-${Math.floor(1000 + Math.random() * 9000)}`;
+
+        const schoolOrigin = (row.sekolah_asal || row.school_origin || (isInternal ? 'Edelweiss School Internal' : '')).trim();
+        // Siswa internal tidak mengisi sesi kedatangan openhouse (kosong)
+        const attendanceSession = isInternal ? '-' : (row.sesi_kedatangan || row.attendance_session || 'Sabtu, 8 Agt (08.00)');
+        const paymentMethod = 'pay_onsite';
+        const paymentStatus = isInternal ? 'verified' : 'pending';
+
+        stmts.push(
+          db.prepare(`
+            INSERT INTO registrations (
+              ticket_code, level_id, slot_number, registration_type, child_name, birth_date, 
+              gender, parent_name, whatsapp, email, school_origin, attendance_session, 
+              payment_method, payment_status
+            ) VALUES (?, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          `).bind(
+            ticketCode, levelId, finalRegType, childName, birthDate,
+            gender, parentName, whatsapp, email, schoolOrigin, attendanceSession,
+            paymentMethod, paymentStatus
+          )
+        );
+        successCount++;
+      }
+
+      if (stmts.length > 0) {
+        // Chunk batch in groups of 50 to avoid D1 payload limit
+        const chunkSize = 50;
+        for (let i = 0; i < stmts.length; i += chunkSize) {
+          await db.batch(stmts.slice(i, i + chunkSize));
+        }
+        return NextResponse.json({ status: 'success', message: `${successCount} data siswa berhasil diimpor ke sistem.` });
+      }
+
+      return NextResponse.json({ status: 'error', message: 'Tidak ada data valid yang dapat diimpor.' });
     }
 
     // 7. GET SCHEDULES
