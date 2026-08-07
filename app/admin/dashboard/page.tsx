@@ -104,6 +104,9 @@ export default function AdminDashboardPage() {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
 
+  // Modal Pop Up Lihat Bukti Bayar
+  const [viewProofModal, setViewProofModal] = useState<{ childName: string; ticketCode: string; proofUrl: string } | null>(null);
+
   useEffect(() => {
     const token = localStorage.getItem('adminToken');
     if (!token) {
@@ -916,20 +919,22 @@ export default function AdminDashboardPage() {
                             )}
                           </div>
 
-                          {/* Direct Download Bukti Bayar */}
+                          {/* Modal-triggered Lihat Bukti Bayar */}
                           {item.payment_proof ? (
                             <>
-                              <a
-                                href={item.payment_proof || DUMMY_RECEIPT_IMG}
-                                download={`Bukti_Bayar_${item.child_name.replace(/\s+/g, '_')}_${item.ticket_code}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
+                              <button
+                                type="button"
+                                onClick={() => setViewProofModal({
+                                  childName: item.child_name,
+                                  ticketCode: item.ticket_code,
+                                  proofUrl: item.payment_proof!
+                                })}
                                 className="w-full bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-300 font-bold px-2.5 py-1 rounded-lg text-[11px] transition flex items-center justify-center gap-1 shadow-2xs cursor-pointer mb-1"
-                                title="Klik untuk melihat bukti pembayaran"
+                                title="Klik untuk pratinjau bukti pembayaran"
                               >
                                 <Eye className="w-3.5 h-3.5 text-blue-600" />
                                 <span>Lihat Bukti Bayar</span>
-                              </a>
+                              </button>
                               {(!item.payment_status || item.payment_status === 'pending') && (
                                 <div className="flex gap-1 mt-1">
                                   <button onClick={() => handleVerifyPayment(item.id, 'verified')} className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-1 rounded text-[10px]">Setujui</button>
@@ -1289,6 +1294,69 @@ export default function AdminDashboardPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Pop Up Lihat Bukti Pembayaran */}
+      {viewProofModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-6 max-w-lg w-full relative shadow-2xl animate-in fade-in zoom-in duration-150 border border-slate-100">
+            <button
+              onClick={() => setViewProofModal(null)}
+              className="absolute top-4 right-4 bg-slate-100 hover:bg-slate-200 text-slate-700 p-2 rounded-full transition"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center gap-2 mb-2">
+              <span className="bg-blue-100 text-[#002B5B] text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                <Eye className="w-3 h-3 text-blue-600" /> BUKTI PEMBAYARAN
+              </span>
+            </div>
+
+            <h3 className="text-lg font-bold text-[#002B5B]">
+              Bukti Pembayaran Pendaftar
+            </h3>
+            <p className="text-xs text-slate-500 mb-4">
+              Nama Siswa: <strong>{viewProofModal.childName}</strong> ({viewProofModal.ticketCode})
+            </p>
+
+            <div className="bg-slate-900/5 p-3 rounded-2xl border border-slate-200 flex items-center justify-center min-h-[250px] max-h-[420px] overflow-auto mb-5">
+              {viewProofModal.proofUrl.endsWith('.pdf') ? (
+                <iframe
+                  src={viewProofModal.proofUrl}
+                  className="w-full h-[380px] rounded-lg border border-slate-300"
+                  title="PDF Preview"
+                />
+              ) : (
+                <img
+                  src={viewProofModal.proofUrl}
+                  alt={`Bukti Bayar ${viewProofModal.childName}`}
+                  className="max-h-[380px] object-contain rounded-xl shadow-sm"
+                />
+              )}
+            </div>
+
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setViewProofModal(null)}
+                className="w-1/3 py-2.5 px-3 rounded-xl border border-slate-300 text-slate-600 font-bold text-xs hover:bg-slate-50"
+              >
+                Tutup
+              </button>
+              <a
+                href={viewProofModal.proofUrl}
+                download={`Bukti_Bayar_${viewProofModal.childName.replace(/\s+/g, '_')}_${viewProofModal.ticketCode}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-2/3 py-2.5 px-3 rounded-xl bg-[#002B5B] hover:bg-blue-900 text-white font-extrabold text-xs shadow-md transition flex items-center justify-center gap-2"
+              >
+                <Download className="w-4 h-4 text-[#FED700]" />
+                <span>Unduh Bukti Bayar</span>
+              </a>
+            </div>
           </div>
         </div>
       )}

@@ -524,10 +524,18 @@ async function handleRequest(request: NextRequest) {
       if (!st) return NextResponse.json({ status: 'error', message: 'Email tidak ditemukan.' });
 
       const pwdClean = password.replace(/\D/g, '');
-      const dbBirth = (st as any).birth_date;
-      const dbBirthClean = dbBirth.replace(/-/g, '');
-      if (pwdClean !== dbBirthClean && password !== dbBirth) {
-        return NextResponse.json({ status: 'error', message: 'Password salah (Gunakan YYYY-MM-DD atau DDMMYYYY).' });
+      const dbBirth = (st as any).birth_date; // YYYY-MM-DD
+      const [bYear, bMonth, bDay] = dbBirth.split('-');
+      const validFormats = [
+        dbBirth,                             // 2017-08-15
+        `${bDay}${bMonth}${bYear}`,           // 15082017 (DDMMYYYY)
+        `${bYear}${bMonth}${bDay}`,           // 20170815 (YYYYMMDD)
+        `${bDay}-${bMonth}-${bYear}`,          // 15-08-2017 (DD-MM-YYYY)
+        `${bDay}/${bMonth}/${bYear}`           // 15/08/2017 (DD/MM/YYYY)
+      ];
+
+      if (!validFormats.includes(password.trim()) && pwdClean !== `${bDay}${bMonth}${bYear}` && pwdClean !== `${bYear}${bMonth}${bDay}`) {
+        return NextResponse.json({ status: 'error', message: 'Password salah. Gunakan tanggal lahir anak (contoh: 15082017 atau YYYY-MM-DD).' });
       }
 
       if (!(st as any).payment_proof) return NextResponse.json({ status: 'payment_required', message: 'Belum bayar', student: st });
@@ -657,8 +665,7 @@ async function handleRequest(request: NextRequest) {
               </div>
             </div>
           `;
-          
-          await sendEmailViaGraphAPI(reg.email, emailSubject, emailHtml, env);
+          await sendEmailViaGraphAPI(env, reg.email, emailSubject, emailHtml);
         }
       }
 
